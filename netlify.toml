@@ -1,5 +1,5 @@
 [build]
-  command = "pnpm install --no-frozen-lockfile && vite build"
+  command = "rm -rf node_modules && rm -f pnpm-lock.yaml && npm install && npm run build"
   publish = "dist"
 
 [build.environment]
