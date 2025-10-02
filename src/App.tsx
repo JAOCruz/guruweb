@@ -9,7 +9,7 @@ import Footer from "../src/components/Footer";
 function App() {
   return (
     <div
-      className="relative min-h-screen"
+      className="relative min-h-screen overflow-x-hidden"
       style={{
         backgroundImage: `
           linear-gradient(to bottom, 
@@ -25,12 +25,14 @@ function App() {
       }}
     >
       <NavBar />
-      <HeroSection />
-      <AboutSection />
-      <TestimonialsSection />
-      <CTASection />
-      <LocationSection />
-      <Footer />
+      <div className="pt-20 md:pt-24">
+        <HeroSection />
+        <AboutSection />
+        <TestimonialsSection />
+        <CTASection />
+        <LocationSection />
+        <Footer />
+      </div>
     </div>
   );
 }

@@ -1,7 +1,14 @@
-import React from "react";
-import { motion } from "framer-motion";
+import React, { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { FiMenu, FiX } from "react-icons/fi";
 
 const NavBar: React.FC = () => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const toggleMenu = () => {
+    setIsOpen(!isOpen);
+  };
+
   const navVariants = {
     hidden: { opacity: 0, y: -20 },
     visible: {
@@ -9,7 +16,7 @@ const NavBar: React.FC = () => {
       y: 0,
       transition: {
         duration: 0.6,
-        ease: "easeOut",
+        ease: [0.43, 0.13, 0.23, 0.96],
       },
     },
   };
@@ -32,9 +39,30 @@ const NavBar: React.FC = () => {
     tap: { scale: 0.95 },
   };
 
+  const menuVariants = {
+    closed: {
+      opacity: 0,
+      x: "100%",
+      transition: {
+        type: "spring",
+        stiffness: 400,
+        damping: 40,
+      },
+    },
+    open: {
+      opacity: 1,
+      x: 0,
+      transition: {
+        type: "spring",
+        stiffness: 400,
+        damping: 40,
+      },
+    },
+  };
+
   return (
     <motion.nav
-      className="flex items-center justify-between px-8 py-6"
+      className="fixed top-0 right-0 left-0 z-50 flex items-center justify-between bg-black/80 px-6 py-4 backdrop-blur-sm md:px-8 md:py-6"
       initial="hidden"
       animate="visible"
       variants={navVariants}
@@ -50,7 +78,8 @@ const NavBar: React.FC = () => {
         </div>
       </motion.div>
 
-      <div className="flex items-center gap-8">
+      {/* Desktop Navigation */}
+      <div className="hidden items-center gap-8 md:flex">
         <motion.a
           href="#"
           className="text-gray-300 transition hover:text-white"
@@ -87,6 +116,72 @@ const NavBar: React.FC = () => {
           Contáctanos
         </motion.a>
       </div>
+
+      {/* Mobile Menu Button */}
+      <div className="md:hidden">
+        <motion.button
+          onClick={toggleMenu}
+          className="rounded-full bg-blue-900/30 p-2 text-white"
+          whileTap={{ scale: 0.95 }}
+        >
+          {isOpen ? <FiX size={24} /> : <FiMenu size={24} />}
+        </motion.button>
+      </div>
+
+      {/* Mobile Navigation */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            className="fixed inset-0 top-16 z-40 flex flex-col items-center bg-black pt-10"
+            initial="closed"
+            animate="open"
+            exit="closed"
+            variants={menuVariants}
+          >
+            <div className="flex w-full flex-col items-center gap-6 bg-gradient-to-b from-blue-950 to-black">
+              <motion.a
+                href="#"
+                className="w-full py-4 text-center text-xl font-medium text-white transition hover:text-blue-300"
+                variants={linkVariants}
+                whileHover="hover"
+                onClick={() => setIsOpen(false)}
+              >
+                Inicio
+              </motion.a>
+              <motion.a
+                href="#"
+                className="w-full py-4 text-center text-xl font-medium text-white transition hover:text-blue-300"
+                variants={linkVariants}
+                whileHover="hover"
+                onClick={() => setIsOpen(false)}
+              >
+                Servicios
+              </motion.a>
+              <motion.a
+                href="#"
+                className="w-full py-4 text-center text-xl font-medium text-white transition hover:text-blue-300"
+                variants={linkVariants}
+                whileHover="hover"
+                onClick={() => setIsOpen(false)}
+              >
+                Sobre Nosotros
+              </motion.a>
+              <motion.a
+                href="https://wa.me/18298049017"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-6 mb-8 rounded border-2 border-blue-500 bg-blue-900/30 px-8 py-3 text-lg font-semibold text-white transition hover:bg-blue-500"
+                variants={buttonVariants}
+                whileHover="hover"
+                whileTap="tap"
+                onClick={() => setIsOpen(false)}
+              >
+                Contáctanos
+              </motion.a>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.nav>
   );
 };
