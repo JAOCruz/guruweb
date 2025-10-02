@@ -1,6 +1,7 @@
 [build]
-  command = "pnpm install --no-frozen-lockfile && pnpm run build"
+  command = "pnpm install --no-frozen-lockfile && vite build"
   publish = "dist"
 
 [build.environment]
   NODE_VERSION = "20.11.1"
+  SKIP_TYPESCRIPT = "true"
