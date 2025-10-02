@@ -1,7 +1,8 @@
 [build]
-  command = "rm -rf node_modules && rm -f pnpm-lock.yaml && npm install && npm run build"
+  command = "bash ./netlify-build.sh"
   publish = "dist"
 
 [build.environment]
   NODE_VERSION = "20.11.1"
   SKIP_TYPESCRIPT = "true"
+  NPM_FLAGS = "--no-package-lock"
