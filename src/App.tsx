@@ -29,6 +29,7 @@ function App() {
       <AboutSection />
       <TestimonialsSection />
       <CTASection />
+      <LocationSection />
       <Footer />
     </div>
   );
