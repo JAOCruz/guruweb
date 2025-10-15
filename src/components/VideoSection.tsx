@@ -36,20 +36,25 @@ const VideoSection: React.FC = () => {
     >
       <div className="mx-auto max-w-4xl">
         <motion.div
-          className="overflow-hidden rounded-4xl border-2 border-blue-500 bg-black/40 backdrop-blur-sm"
+          className="overflow-hidden rounded-xl border-2 border-blue-500 bg-black/40 backdrop-blur-sm"
           variants={itemVariants}
           whileHover={{
             boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.3)",
+            scale: 1.01,
           }}
         >
           <video
             ref={videoRef}
-            className="w-full"
-            controls
+            className="w-full rounded-lg object-cover shadow-inner"
             autoPlay
             loop
             muted
             playsInline
+            disablePictureInPicture
+            disableRemotePlayback
+            style={{
+              filter: "contrast(1.05) brightness(1.05)",
+            }}
           >
             <source src="/1.mp4" type="video/mp4" />
             Tu navegador no soporta videos HTML5.
