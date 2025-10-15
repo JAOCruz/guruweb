@@ -1,10 +1,9 @@
-import React, { useState, useRef } from "react";
+import React, { useRef } from "react";
 import { motion, easeOut, useMotionValue, useSpring } from "framer-motion";
 
 const DominicanSection: React.FC = () => {
   // Mouse position tracking for tilt effect
   const mapRef = useRef<HTMLDivElement>(null);
-  const [mouseEntered, setMouseEntered] = useState(false);
 
   // Motion values for tilt effect
   const rotateX = useMotionValue(0);
@@ -37,14 +36,13 @@ const DominicanSection: React.FC = () => {
 
   // Reset rotation when mouse leaves
   const handleMouseLeave = () => {
-    setMouseEntered(false);
     rotateX.set(0);
     rotateY.set(0);
   };
 
-  // Set entered state when mouse enters
+  // Handle mouse enter
   const handleMouseEnter = () => {
-    setMouseEntered(true);
+    // Ready for mouse movement
   };
 
   const containerVariants = {
@@ -112,23 +110,89 @@ const DominicanSection: React.FC = () => {
                 rotateY: springRotateY,
                 transformStyle: "preserve-3d",
                 transformOrigin: "center center",
-                filter: mouseEntered
-                  ? "drop-shadow(0 20px 30px rgba(0, 0, 0, 0.4))"
-                  : "drop-shadow(0 10px 15px rgba(0, 0, 0, 0.3))",
                 z: 100, // Push forward in 3D space
               }}
             >
-              {/* Simply display the pre-beveled image */}
-              <motion.img
-                src="/rd_3d.png"
-                alt="Mapa de República Dominicana"
-                className="h-full w-auto object-contain"
-                style={{
-                  filter: "brightness(1.05)",
-                  transformStyle: "preserve-3d",
-                  z: 50,
-                }}
-              />
+              {/* Map with bevel effect similar to hero title */}
+              <div
+                className="map-bevel h-full w-full"
+                style={
+                  {
+                    "--mask-image": "url('/rd_3d_3.png')",
+                    height: "300px",
+                  } as React.CSSProperties
+                }
+              >
+                {/* Metallic gradient base layer - matching "Una Experiencia" */}
+                <motion.div
+                  className="absolute inset-0"
+                  style={{
+                    background:
+                      "linear-gradient(135deg, #ffffff 5%, #61dafb 15%, #0e4377 40%, #3c82f6 60%, #1ca0fb 75%, #ffffff 95%)",
+                  }}
+                  animate={{
+                    background: [
+                      "linear-gradient(135deg, #ffffff 5%, #61dafb 15%, #0e4377 40%, #3c82f6 60%, #1ca0fb 75%, #ffffff 95%)",
+                      "linear-gradient(135deg, #ffffff 2%, #61dafb 12%, #0e4377 38%, #3c82f6 65%, #1ca0fb 80%, #ffffff 98%)",
+                      "linear-gradient(135deg, #ffffff 5%, #61dafb 15%, #0e4377 40%, #3c82f6 60%, #1ca0fb 75%, #ffffff 95%)",
+                    ],
+                  }}
+                  transition={{
+                    duration: 5,
+                    repeat: Infinity,
+                    repeatType: "mirror",
+                  }}
+                ></motion.div>
+
+                {/* Bevel highlight effect - top left */}
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    background:
+                      "linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0) 40%, rgba(0,0,0,0) 100%)",
+                    mixBlendMode: "overlay",
+                  }}
+                ></div>
+
+                {/* Bevel shadow effect - bottom right */}
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    background:
+                      "linear-gradient(315deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 40%, rgba(0,0,0,0) 100%)",
+                    mixBlendMode: "overlay",
+                  }}
+                ></div>
+
+                {/* Edge stroke for definition */}
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    boxShadow: "inset 0 0 0 1px rgba(255, 255, 255, 0.3)",
+                  }}
+                ></div>
+
+                {/* Outer glow with animation */}
+                <motion.div
+                  className="absolute -inset-1"
+                  style={{
+                    filter: "drop-shadow(0 0 8px rgba(97, 218, 251, 0.5))",
+                    opacity: 0.7,
+                  }}
+                  animate={{
+                    filter: [
+                      "drop-shadow(0 0 8px rgba(97, 218, 251, 0.5))",
+                      "drop-shadow(0 0 12px rgba(97, 218, 251, 0.7))",
+                      "drop-shadow(0 0 8px rgba(97, 218, 251, 0.5))",
+                    ],
+                  }}
+                  transition={{
+                    duration: 3,
+                    repeat: Infinity,
+                    repeatType: "mirror",
+                  }}
+                ></motion.div>
+              </div>
             </motion.div>
           </motion.div>
 

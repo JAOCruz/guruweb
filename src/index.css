@@ -6,6 +6,19 @@
   transform-style: preserve-3d;
 }
 
+/* Map Bevel Effect - Similar to hero title */
+.map-bevel {
+  position: relative;
+  mask-image: var(--mask-image);
+  -webkit-mask-image: var(--mask-image);
+  mask-size: contain;
+  -webkit-mask-size: contain;
+  mask-repeat: no-repeat;
+  -webkit-mask-repeat: no-repeat;
+  mask-position: center;
+  -webkit-mask-position: center;
+}
+
 /* Neon Text Effect */
 .neon-text {
   text-shadow:
