@@ -72,7 +72,7 @@ const NavBar: React.FC = () => {
         whileHover={{ scale: 1.05 }}
         transition={{ type: "spring", stiffness: 400, damping: 10 }}
       >
-        <div className="text-2xl font-bold text-white">
+        <div className="text-3xl font-bold text-white">
           GURÚ
           <div className="text-xs tracking-widest">SOLUCIONES</div>
         </div>
@@ -89,7 +89,7 @@ const NavBar: React.FC = () => {
           Inicio
         </motion.a>
         <motion.a
-          href="#"
+          href="#servicios"
           className="text-gray-300 transition hover:text-white"
           variants={linkVariants}
           whileHover="hover"
@@ -97,12 +97,12 @@ const NavBar: React.FC = () => {
           Servicios
         </motion.a>
         <motion.a
-          href="#"
+          href="#sobre-guru"
           className="text-gray-300 transition hover:text-white"
           variants={linkVariants}
           whileHover="hover"
         >
-          Sobre Nosotros
+          Sobre el Gurú
         </motion.a>
         <motion.a
           href="https://wa.me/18298049017"
@@ -149,7 +149,7 @@ const NavBar: React.FC = () => {
                 Inicio
               </motion.a>
               <motion.a
-                href="#"
+                href="#servicios"
                 className="w-full py-4 text-center text-xl font-medium text-white transition hover:text-blue-300"
                 variants={linkVariants}
                 whileHover="hover"
@@ -158,13 +158,13 @@ const NavBar: React.FC = () => {
                 Servicios
               </motion.a>
               <motion.a
-                href="#"
+                href="#sobre-guru"
                 className="w-full py-4 text-center text-xl font-medium text-white transition hover:text-blue-300"
                 variants={linkVariants}
                 whileHover="hover"
                 onClick={() => setIsOpen(false)}
               >
-                Sobre Nosotros
+                Sobre el Gurú
               </motion.a>
               <motion.a
                 href="https://wa.me/18298049017"

@@ -69,7 +69,7 @@ const LocationSection: React.FC = () => {
             </div>
 
             <motion.h2
-              className="mb-8 text-4xl leading-tight font-bold text-white lg:text-5xl"
+              className="section-title-neon mb-8 text-4xl leading-tight font-bold lg:text-5xl"
               variants={itemVariants}
             >
               ¿Dónde estamos ubicados?

@@ -47,7 +47,7 @@ const CTASection: React.FC = () => {
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-400/10 to-transparent"></div>
           <div className="relative z-10">
             <motion.h2
-              className="mb-6 text-4xl leading-tight font-bold text-white lg:text-5xl"
+              className="section-title-neon mb-6 text-4xl leading-tight font-bold lg:text-5xl"
               variants={itemVariants}
             >
               Déjanos hacer el

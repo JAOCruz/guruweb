@@ -63,7 +63,7 @@ const TestimonialsSection: React.FC = () => {
               Testimonios
             </span>
           </div>
-          <h2 className="mb-4 text-4xl font-bold text-white">
+          <h2 className="section-title-neon mb-4 text-4xl font-bold">
             Lo que dicen nuestros clientes
           </h2>
           <p className="mx-auto max-w-2xl text-lg text-gray-300">

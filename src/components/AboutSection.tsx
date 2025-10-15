@@ -56,19 +56,10 @@ const AboutSection: React.FC = () => {
         <motion.div
           className="mb-8 flex items-center justify-center gap-2"
           variants={itemVariants}
-        >
-          <motion.div
-            className="h-2 w-2 rounded-full bg-blue-400"
-            variants={dotVariants}
-            animate={pulseAnimation}
-          ></motion.div>
-          <span className="text-sm tracking-wider text-gray-400">
-            Conócenos
-          </span>
-        </motion.div>
+        ></motion.div>
 
         <motion.h2
-          className="mb-12 text-5xl font-bold text-white"
+          className="section-title-neon mb-12 text-6xl font-bold"
           variants={itemVariants}
         >
           ¿Quienes Somos?
@@ -78,11 +69,13 @@ const AboutSection: React.FC = () => {
           className="text-lg leading-relaxed text-gray-300"
           variants={itemVariants}
         >
-          Somos expertos en digitación de documentos legales, nuestra misión es
-          simplificar procesos complejos para tu tranquilidad, ofreciendo
-          siempre soluciones ágiles y de calidad.{" "}
-          <span className="font-semibold text-white">Gurú Soluciones</span> es
-          tu socio estratégico para garantizar resultados impecables.
+          <span className="text-3xl font-bold text-white">
+            ¡Somos una empresa de servicios legales automatizados!
+          </span>{" "}
+          <br />
+          Tenemos la capacidad de realizar cualquier tipo de documentación legal
+          de manera personalizada y actualizada. Nuestra misión es simplificar
+          tus procesos más complejos para que puedas cumplir tus sueños.
         </motion.p>
       </div>
     </motion.div>
