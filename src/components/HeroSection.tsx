@@ -26,17 +26,22 @@ const HeroSection: React.FC = () => {
             transformStyle: "preserve-3d",
           }}
         >
-          {/* 3D top line with metallic effect */}
+          {/* Top line with neon effect */}
           <motion.span
-            className="metallic-3d-text block"
+            className="neon-text block"
             animate={{
-              rotateX: [0, 2, 0, -2, 0],
-              rotateY: [0, -3, 0, 3, 0],
+              textShadow: [
+                "0 0 5px #fff, 0 0 10px #fff, 0 0 15px #0073e6, 0 0 20px #0073e6, 0 0 25px #0073e6, 0 0 30px #0073e6",
+                "0 0 10px #fff, 0 0 20px #fff, 0 0 30px #0073e6, 0 0 40px #0073e6, 0 0 50px #0073e6, 0 0 60px #0073e6",
+                "0 0 5px #fff, 0 0 10px #fff, 0 0 15px #0073e6, 0 0 20px #0073e6, 0 0 25px #0073e6, 0 0 30px #0073e6",
+              ],
+              scale: [1, 1.03, 1],
+              z: [0, 30, 0],
             }}
             transition={{
-              duration: 12,
+              duration: 5,
               repeat: Infinity,
-              repeatType: "loop" as const,
+              repeatType: "mirror" as const,
               ease: "easeInOut",
             }}
           >
@@ -70,12 +75,29 @@ const HeroSection: React.FC = () => {
       </motion.div>
 
       <motion.p
-        className="mb-50 text-2xl text-gray-300 italic"
+        className="metallic-3d-text mb-50 text-2xl italic"
         initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 0.5, y: 0 }}
+        animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: "easeOut", delay: 0.3 }}
+        style={{
+          transform: "translateZ(0)",
+          transformStyle: "preserve-3d",
+        }}
       >
-        Tus documentos en manos de expertos
+        <motion.span
+          animate={{
+            rotateX: [0, 2, 0, -2, 0],
+            rotateY: [0, -3, 0, 3, 0],
+          }}
+          transition={{
+            duration: 12,
+            repeat: Infinity,
+            repeatType: "loop" as const,
+            ease: "easeInOut",
+          }}
+        >
+          Tus documentos en manos de expertos
+        </motion.span>
       </motion.p>
 
       <motion.button
