@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, easeInOut, spring } from "framer-motion";
 import { FiMenu, FiX } from "react-icons/fi";
 
 const NavBar: React.FC = () => {
@@ -16,7 +16,7 @@ const NavBar: React.FC = () => {
       y: 0,
       transition: {
         duration: 0.6,
-        ease: [0.43, 0.13, 0.23, 0.96],
+        ease: easeInOut,
       },
     },
   };
@@ -44,7 +44,7 @@ const NavBar: React.FC = () => {
       opacity: 0,
       x: "100%",
       transition: {
-        type: "spring",
+        type: spring,
         stiffness: 400,
         damping: 40,
       },
@@ -53,7 +53,7 @@ const NavBar: React.FC = () => {
       opacity: 1,
       x: 0,
       transition: {
-        type: "spring",
+        type: spring,
         stiffness: 400,
         damping: 40,
       },
@@ -103,6 +103,14 @@ const NavBar: React.FC = () => {
           whileHover="hover"
         >
           Sobre el Gurú
+        </motion.a>
+        <motion.a
+          href="/login"
+          className="text-gray-300 transition hover:text-white"
+          variants={linkVariants}
+          whileHover="hover"
+        >
+          ¿Trabajas con Nosotros?
         </motion.a>
         <motion.a
           href="https://wa.me/18298049017"
@@ -165,6 +173,15 @@ const NavBar: React.FC = () => {
                 onClick={() => setIsOpen(false)}
               >
                 Sobre el Gurú
+              </motion.a>
+              <motion.a
+                href="/login"
+                className="w-full py-4 text-center text-xl font-medium text-white transition hover:text-blue-300"
+                variants={linkVariants}
+                whileHover="hover"
+                onClick={() => setIsOpen(false)}
+              >
+                ¿Trabajas con Nosotros?
               </motion.a>
               <motion.a
                 href="https://wa.me/18298049017"
