@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { motion } from "framer-motion";
 import { useAuth } from "../../context/AuthContext";
 
 interface DashboardLayoutProps {
@@ -20,31 +19,20 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
       <div className="hero-bg fixed inset-0 z-0"></div>
 
       {/* Sidebar */}
-      <motion.div
+      <div
         className="fixed top-0 left-0 z-20 h-screen overflow-y-auto border-r border-blue-900/30 bg-gray-900/90 shadow-lg"
-        initial={{ width: sidebarOpen ? 250 : 80 }}
-        animate={{ width: sidebarOpen ? 250 : 80 }}
-        transition={{ duration: 0.3 }}
+        style={{
+          width: sidebarOpen ? "250px" : "80px",
+          transition: "width 0.3s",
+        }}
       >
         <div className="flex h-full flex-col">
           {/* Sidebar Header */}
           <div className="flex h-16 items-center justify-between border-b border-blue-900/50 px-4">
             {sidebarOpen ? (
-              <motion.h1
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="neon-text text-xl font-bold"
-              >
-                Gurú Dashboard
-              </motion.h1>
+              <h1 className="neon-text text-xl font-bold">Gurú Dashboard</h1>
             ) : (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="neon-text mx-auto text-xl font-bold"
-              >
-                G
-              </motion.div>
+              <div className="neon-text mx-auto text-xl font-bold">G</div>
             )}
             <button
               onClick={toggleSidebar}
@@ -86,13 +74,9 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
 
           {/* Sidebar Navigation */}
           <nav className="mt-6 flex-1 space-y-2 px-2">
-            <motion.a
+            <a
               href="/dashboard"
               className="flex items-center rounded-lg px-4 py-3 text-gray-300 transition-colors hover:bg-blue-900/30 hover:text-white"
-              whileHover={{
-                scale: 1.02,
-                textShadow: "0 0 8px rgba(59, 130, 246, 0.8)",
-              }}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -109,14 +93,10 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                 />
               </svg>
               {sidebarOpen && <span className="ml-3">Dashboard</span>}
-            </motion.a>
-            <motion.a
+            </a>
+            <a
               href="/dashboard/data"
               className="flex items-center rounded-lg px-4 py-3 text-gray-300 transition-colors hover:bg-blue-900/30 hover:text-white"
-              whileHover={{
-                scale: 1.02,
-                textShadow: "0 0 8px rgba(59, 130, 246, 0.8)",
-              }}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -133,14 +113,10 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                 />
               </svg>
               {sidebarOpen && <span className="ml-3">Datos</span>}
-            </motion.a>
-            <motion.a
+            </a>
+            <a
               href="/dashboard/charts"
               className="flex items-center rounded-lg px-4 py-3 text-gray-300 transition-colors hover:bg-blue-900/30 hover:text-white"
-              whileHover={{
-                scale: 1.02,
-                textShadow: "0 0 8px rgba(59, 130, 246, 0.8)",
-              }}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -157,7 +133,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                 />
               </svg>
               {sidebarOpen && <span className="ml-3">Gráficos</span>}
-            </motion.a>
+            </a>
           </nav>
 
           {/* Sidebar Footer */}
@@ -180,7 +156,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
             </div>
           </div>
         </div>
-      </motion.div>
+      </div>
 
       {/* Main Content */}
       <div
@@ -203,14 +179,12 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
               Bienvenido, {user?.username}
               {isAdmin && <span className="ml-1 text-blue-400">(Admin)</span>}
             </span>
-            <motion.button
+            <button
               onClick={logout}
               className="rounded-md border border-red-900/30 bg-red-500/20 px-4 py-2 text-sm text-red-300 hover:bg-red-500/30"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
             >
               Cerrar sesión
-            </motion.button>
+            </button>
           </div>
         </header>
 

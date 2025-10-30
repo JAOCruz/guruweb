@@ -1,5 +1,4 @@
 import React from "react";
-import { motion } from "framer-motion";
 import {
   BarChart,
   Bar,
@@ -118,12 +117,7 @@ const DataCharts: React.FC<DataChartsProps> = ({ data }) => {
   return (
     <div className="perspective-container space-y-8">
       {/* Bar Chart */}
-      <motion.div
-        className="rounded-lg border border-blue-900/30 bg-gray-900/80 p-6 backdrop-blur-sm"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
+      <div className="rounded-lg border border-blue-900/30 bg-gray-900/80 p-6 backdrop-blur-sm">
         <h3 className="bevel-text mb-4 text-xl font-semibold">
           {isAdmin ? "Comparación por Categoría" : "Mis Ganancias por Servicio"}
         </h3>
@@ -151,21 +145,16 @@ const DataCharts: React.FC<DataChartsProps> = ({ data }) => {
                   key={column}
                   dataKey={column}
                   fill={NEON_COLORS[index % NEON_COLORS.length]}
-                  animationDuration={1500}
+                  animationDuration={0}
                 />
               ))}
             </BarChart>
           </ResponsiveContainer>
         </div>
-      </motion.div>
+      </div>
 
       {/* Line Chart */}
-      <motion.div
-        className="rounded-lg border border-blue-900/30 bg-gray-900/80 p-6 backdrop-blur-sm"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.2 }}
-      >
+      <div className="rounded-lg border border-blue-900/30 bg-gray-900/80 p-6 backdrop-blur-sm">
         <h3 className="bevel-text mb-4 text-xl font-semibold">
           {isAdmin ? "Tendencias" : "Evolución de Ganancias"}
         </h3>
@@ -203,7 +192,7 @@ const DataCharts: React.FC<DataChartsProps> = ({ data }) => {
                     strokeWidth: 0,
                   }}
                   strokeWidth={3}
-                  animationDuration={1500}
+                  animationDuration={0}
                   dot={{
                     strokeWidth: 0,
                     fill: NEON_COLORS[index % NEON_COLORS.length],
@@ -213,15 +202,10 @@ const DataCharts: React.FC<DataChartsProps> = ({ data }) => {
             </LineChart>
           </ResponsiveContainer>
         </div>
-      </motion.div>
+      </div>
 
       {/* Pie Chart */}
-      <motion.div
-        className="rounded-lg border border-blue-900/30 bg-gray-900/80 p-6 backdrop-blur-sm"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.4 }}
-      >
+      <div className="rounded-lg border border-blue-900/30 bg-gray-900/80 p-6 backdrop-blur-sm">
         <h3 className="bevel-text mb-4 text-xl font-semibold">
           {isAdmin ? "Distribución Total" : "Distribución de Mis Ganancias"}
         </h3>
@@ -239,7 +223,7 @@ const DataCharts: React.FC<DataChartsProps> = ({ data }) => {
                 label={({ name, percent }) =>
                   `${name}: ${(percent * 100).toFixed(0)}%`
                 }
-                animationDuration={1500}
+                animationDuration={0}
               >
                 {pieData.map((entry, index) => (
                   <Cell
@@ -261,7 +245,7 @@ const DataCharts: React.FC<DataChartsProps> = ({ data }) => {
             </PieChart>
           </ResponsiveContainer>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 };

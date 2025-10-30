@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { motion } from "framer-motion";
 import { ExcelRow } from "../../services/excelService";
 import { useAuth } from "../../context/AuthContext";
 
@@ -88,12 +87,7 @@ const DataTable: React.FC<DataTableProps> = ({ data, onSort }) => {
   };
 
   return (
-    <motion.div
-      className="perspective-container overflow-x-auto rounded-lg border border-blue-900/30 bg-gray-800/80 backdrop-blur-sm"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-    >
+    <div className="perspective-container overflow-x-auto rounded-lg border border-blue-900/30 bg-gray-800/80 backdrop-blur-sm">
       <div className="border-b border-blue-900/30 bg-gray-900/80 px-4 py-3">
         <h3 className="bevel-text text-lg font-medium">
           Mis Servicios y Ganancias
@@ -120,17 +114,7 @@ const DataTable: React.FC<DataTableProps> = ({ data, onSort }) => {
         <tbody className="divide-y divide-blue-900/20 bg-gray-800/50">
           {data.length > 0 ? (
             data.map((row, rowIndex) => (
-              <motion.tr
-                key={rowIndex}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: rowIndex * 0.05 }}
-                whileHover={{
-                  backgroundColor: "rgba(59, 130, 246, 0.1)",
-                  boxShadow: "0 0 10px rgba(59, 130, 246, 0.3)",
-                }}
-                className="transition-all duration-200"
-              >
+              <tr key={rowIndex} className="hover:bg-blue-900/10">
                 {columns.map((column) => (
                   <td
                     key={`${rowIndex}-${column}`}
@@ -143,7 +127,7 @@ const DataTable: React.FC<DataTableProps> = ({ data, onSort }) => {
                     {row[column] !== undefined ? row[column] : "—"}
                   </td>
                 ))}
-              </motion.tr>
+              </tr>
             ))
           ) : (
             <tr>
@@ -157,7 +141,7 @@ const DataTable: React.FC<DataTableProps> = ({ data, onSort }) => {
           )}
         </tbody>
       </table>
-    </motion.div>
+    </div>
   );
 };
 

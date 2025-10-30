@@ -34,7 +34,7 @@ const VideoSection: React.FC = () => {
       viewport={{ once: true, amount: 0.3 }}
       variants={containerVariants}
     >
-      <div className="mx-auto max-w-4xl">
+      <div className="mx-auto max-w-2xl">
         <motion.div
           className="overflow-hidden rounded-xl border-2 border-blue-500 bg-black/40 backdrop-blur-sm"
           variants={itemVariants}

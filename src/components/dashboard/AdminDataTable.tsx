@@ -1,18 +1,15 @@
 import React, { useState } from "react";
-import { motion } from "framer-motion";
 import { ExcelRow } from "../../services/excelService";
 
 interface AdminDataTableProps {
   data: ExcelRow[];
-  onSort: (column: string, direction: "asc" | "desc") => void;
+  onSort: (column: string, direction: "asc" | "desc") => void; // Kept for API compatibility
 }
 
 // User columns in the data
 const USER_COLUMNS = ["HENGI", "MARLENI", "ISRAEL", "THAICAR"];
 
-const AdminDataTable: React.FC<AdminDataTableProps> = ({ data, onSort }) => {
-  const [sortColumn, setSortColumn] = useState<string | null>(null);
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+const AdminDataTable: React.FC<AdminDataTableProps> = ({ data }) => {
   const [activeUser, setActiveUser] = useState<string | "all">("all");
 
   // Group data by user and type (service or earnings)
@@ -116,14 +113,7 @@ const AdminDataTable: React.FC<AdminDataTableProps> = ({ data, onSort }) => {
   const userTotals = calculateUserTotals(groupedData);
   const adminTotal = calculateAdminTotal(userTotals);
 
-  const handleSort = (column: string) => {
-    const newDirection =
-      sortColumn === column && sortDirection === "asc" ? "desc" : "asc";
-
-    setSortColumn(column);
-    setSortDirection(newDirection);
-    onSort(column, newDirection);
-  };
+  // Sorting functionality removed as it's not needed in the current implementation
 
   const handleUserChange = (user: string | "all") => {
     setActiveUser(user);
@@ -133,15 +123,13 @@ const AdminDataTable: React.FC<AdminDataTableProps> = ({ data, onSort }) => {
     <div className="space-y-6 pb-10">
       {/* User selector tabs */}
       <div className="flex flex-wrap border-b border-blue-900/30">
-        <motion.button
+        <button
           onClick={() => handleUserChange("all")}
           className={`mr-4 border-b-2 px-4 py-2 text-sm font-medium ${
             activeUser === "all"
               ? "border-blue-500"
               : "border-transparent hover:border-gray-300"
           }`}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
         >
           <span
             className={
@@ -152,10 +140,10 @@ const AdminDataTable: React.FC<AdminDataTableProps> = ({ data, onSort }) => {
           >
             Todos los Usuarios
           </span>
-        </motion.button>
+        </button>
 
         {USER_COLUMNS.map((user) => (
-          <motion.button
+          <button
             key={user}
             onClick={() => handleUserChange(user)}
             className={`mr-4 border-b-2 px-4 py-2 text-sm font-medium ${
@@ -163,8 +151,6 @@ const AdminDataTable: React.FC<AdminDataTableProps> = ({ data, onSort }) => {
                 ? "border-blue-500"
                 : "border-transparent hover:border-gray-300"
             }`}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
           >
             <span
               className={
@@ -175,29 +161,20 @@ const AdminDataTable: React.FC<AdminDataTableProps> = ({ data, onSort }) => {
             >
               {user}
             </span>
-          </motion.button>
+          </button>
         ))}
       </div>
 
       {/* Admin summary - always visible */}
-      <motion.div
-        className="perspective-container rounded-lg border border-blue-700 bg-blue-900/20 p-4"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
+      <div className="perspective-container rounded-lg border border-blue-700 bg-blue-900/20 p-4">
         <h3 className="metallic-3d-text mb-2 text-xl font-semibold">
           Resumen Administrativo
         </h3>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5">
           {USER_COLUMNS.map((user) => (
-            <motion.div
+            <div
               key={user}
               className="rounded-lg border border-gray-700 bg-gray-800/80 p-3 backdrop-blur-sm"
-              whileHover={{
-                scale: 1.03,
-                boxShadow: "0 0 15px rgba(59, 130, 246, 0.5)",
-              }}
             >
               <h4 className="text-md bevel-text font-medium">{user}</h4>
               <p className="text-sm text-gray-300">
@@ -218,30 +195,21 @@ const AdminDataTable: React.FC<AdminDataTableProps> = ({ data, onSort }) => {
                   {userTotals[user].userShare}
                 </span>
               </p>
-            </motion.div>
+            </div>
           ))}
-          <motion.div
-            className="glow-animation rounded-lg border border-green-700 bg-green-900/20 p-3"
-            whileHover={{
-              scale: 1.05,
-              boxShadow: "0 0 20px rgba(59, 130, 246, 0.7)",
-            }}
-          >
+          <div className="glow-animation rounded-lg border border-green-700 bg-green-900/20 p-3">
             <h4 className="text-md neon-text font-medium">Total Admin</h4>
             <p className="text-xl font-bold text-white">{adminTotal}</p>
             <p className="text-sm text-gray-300">50% de todos los usuarios</p>
-          </motion.div>
+          </div>
         </div>
-      </motion.div>
+      </div>
 
       {/* User data tables */}
       {(activeUser === "all" ? USER_COLUMNS : [activeUser]).map((user) => (
-        <motion.div
+        <div
           key={user}
           className="overflow-hidden rounded-lg border border-blue-900/30 bg-gray-800/80 backdrop-blur-sm"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
         >
           <div className="border-b border-blue-900/30 bg-gray-900/80 px-4 py-3">
             <h3 className="bevel-text text-lg font-medium">{user}</h3>
@@ -261,14 +229,9 @@ const AdminDataTable: React.FC<AdminDataTableProps> = ({ data, onSort }) => {
               <tbody className="divide-y divide-gray-700/50 bg-gray-800/50">
                 {groupedData[user].services.length > 0 ? (
                   groupedData[user].services.map((item, index) => (
-                    <motion.tr
+                    <tr
                       key={`${user}-service-${index}`}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                      whileHover={{
-                        backgroundColor: "rgba(59, 130, 246, 0.1)",
-                      }}
+                      className="hover:bg-blue-900/10"
                     >
                       <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-300">
                         {item.service}
@@ -276,7 +239,7 @@ const AdminDataTable: React.FC<AdminDataTableProps> = ({ data, onSort }) => {
                       <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-300">
                         {item.earnings}
                       </td>
-                    </motion.tr>
+                    </tr>
                   ))
                 ) : (
                   <tr>
@@ -317,7 +280,7 @@ const AdminDataTable: React.FC<AdminDataTableProps> = ({ data, onSort }) => {
               </tbody>
             </table>
           </div>
-        </motion.div>
+        </div>
       ))}
     </div>
   );

@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { motion } from "framer-motion";
 
 interface DataModificationFormProps {
   onAddService: (user: string, service: string, earnings: number) => void;
@@ -43,44 +42,26 @@ const DataModificationForm: React.FC<DataModificationFormProps> = ({
   };
 
   return (
-    <motion.div
-      className="perspective-container overflow-hidden rounded-lg border border-blue-900/30 bg-gray-800/80 backdrop-blur-sm"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-    >
+    <div className="perspective-container overflow-hidden rounded-lg border border-blue-900/30 bg-gray-800/80 backdrop-blur-sm">
       <div className="flex items-center justify-between border-b border-blue-900/30 bg-gray-900/80 px-4 py-3">
         <h3 className="metallic-3d-text text-lg font-medium">
           Modificar Datos
         </h3>
-        <motion.button
+        <button
           onClick={() => setIsFormOpen(!isFormOpen)}
           className="rounded-lg border border-blue-900/30 bg-blue-600/20 px-4 py-2 text-sm text-blue-300 hover:bg-blue-600/30"
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
         >
           {isFormOpen ? "Cancelar" : "Agregar Servicio"}
-        </motion.button>
+        </button>
       </div>
 
       {isFormOpen && (
-        <motion.div
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: "auto" }}
-          exit={{ opacity: 0, height: 0 }}
-          transition={{ duration: 0.3 }}
-          className="p-4"
-        >
+        <div className="p-4">
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
-              <motion.div
-                className="rounded-md border border-red-900/30 bg-red-500/20 p-3 text-center text-red-300"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.3 }}
-              >
+              <div className="rounded-md border border-red-900/30 bg-red-500/20 p-3 text-center text-red-300">
                 {error}
-              </motion.div>
+              </div>
             )}
 
             <div>
@@ -141,19 +122,17 @@ const DataModificationForm: React.FC<DataModificationFormProps> = ({
             </div>
 
             <div className="flex justify-end">
-              <motion.button
+              <button
                 type="submit"
                 className="rounded-lg border border-green-900/30 bg-green-600/20 px-6 py-2.5 text-sm font-medium text-green-300 hover:bg-green-600/30"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
               >
                 Guardar
-              </motion.button>
+              </button>
             </div>
           </form>
-        </motion.div>
+        </div>
       )}
-    </motion.div>
+    </div>
   );
 };
 
