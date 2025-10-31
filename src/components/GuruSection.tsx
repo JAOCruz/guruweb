@@ -64,11 +64,13 @@ const GuruSection: React.FC = () => {
                 El Búho de la Sabiduría Legal
               </h3>
               <p className="text-lg leading-relaxed text-gray-300">
-                Nuestro Gurú, representado por un búho con lentes, simboliza la
-                sabiduría y atención al detalle que caracteriza nuestros
-                servicios. Con su mirada aguda y preparación impecable, nuestro
-                mascota personifica los valores de excelencia y profesionalismo
-                que ofrecemos en cada documento legal que procesamos.
+                Nuestro “Búho” representa al sabio interno que todo abogado
+                tiene en su interior, este personaje es quien te atenderá en
+                cada interacción con la capacidad de manejar temas en
+                lineamientos de procedimientos civiles locales, leyes y
+                contratos legales en general, que se realizan en la República
+                Dominicana y son aceptados en la procuraduría general del cual
+                se realizan República
               </p>
             </motion.div>
             <motion.div
@@ -103,11 +105,11 @@ const GuruSection: React.FC = () => {
                 Compromiso con la Precisión
               </h3>
               <p className="text-lg leading-relaxed text-gray-300">
-                Así como nuestro búho lee cuidadosamente cada documento, en Gurú
-                Soluciones revisamos meticulosamente cada detalle para
-                garantizar la exactitud y calidad de nuestro trabajo. Nuestro
-                compromiso es brindar tranquilidad a nuestros clientes, sabiendo
-                que sus documentos legales están en las mejores manos.
+                Nuestro equipo pasa día y noche aprendiendo de cada experiencia
+                para ofrecer un servicio de calidad a cada cliente. Aquí
+                revisamos meticulosamente la legibilidad de los datos mediante
+                tecnología de la más alta calidad. ¡Tu aliado tech-legal para
+                navegar el sistema con flow y precisión!
               </p>
             </motion.div>
           </div>

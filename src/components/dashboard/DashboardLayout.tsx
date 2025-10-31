@@ -14,13 +14,13 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-900">
-      {/* Background effect similar to main page */}
-      <div className="hero-bg fixed inset-0 z-0"></div>
+    <div className="flex h-screen bg-gray-900">
+      {/* Background effect - fixed and non-interactive */}
+      <div className="hero-bg pointer-events-none fixed inset-0 z-0"></div>
 
-      {/* Sidebar */}
+      {/* Sidebar - Fixed position */}
       <div
-        className="fixed top-0 left-0 z-20 h-screen overflow-y-auto border-r border-blue-900/30 bg-gray-900/90 shadow-lg"
+        className="fixed top-0 left-0 z-20 h-full border-r border-blue-900/30 bg-gray-900/90 shadow-lg"
         style={{
           width: sidebarOpen ? "250px" : "80px",
           transition: "width 0.3s",
@@ -28,7 +28,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
       >
         <div className="flex h-full flex-col">
           {/* Sidebar Header */}
-          <div className="flex h-16 items-center justify-between border-b border-blue-900/50 px-4">
+          <div className="flex h-16 flex-shrink-0 items-center justify-between border-b border-blue-900/50 px-4">
             {sidebarOpen ? (
               <h1 className="neon-text text-xl font-bold">Gurú Dashboard</h1>
             ) : (
@@ -72,15 +72,15 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
             </button>
           </div>
 
-          {/* Sidebar Navigation */}
-          <nav className="mt-6 flex-1 space-y-2 px-2">
+          {/* Sidebar Navigation - Scrollable if needed */}
+          <nav className="flex-1 space-y-2 overflow-y-auto px-2 py-6">
             <a
               href="/dashboard"
               className="flex items-center rounded-lg px-4 py-3 text-gray-300 transition-colors hover:bg-blue-900/30 hover:text-white"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-6 w-6"
+                className="h-6 w-6 flex-shrink-0"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -100,7 +100,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-6 w-6"
+                className="h-6 w-6 flex-shrink-0"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -120,7 +120,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-6 w-6"
+                className="h-6 w-6 flex-shrink-0"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -137,14 +137,16 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
           </nav>
 
           {/* Sidebar Footer */}
-          <div className="border-t border-blue-900/50 p-4">
+          <div className="flex-shrink-0 border-t border-blue-900/50 p-4">
             <div className="flex items-center">
-              <div className="glow-animation flex h-10 w-10 items-center justify-center rounded-full bg-blue-500 text-white">
+              <div className="glow-animation flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-blue-500 text-white">
                 {user?.username.charAt(0).toUpperCase()}
               </div>
               {sidebarOpen && (
-                <div className="ml-3">
-                  <p className="font-medium text-white">{user?.username}</p>
+                <div className="ml-3 min-w-0">
+                  <p className="truncate font-medium text-white">
+                    {user?.username}
+                  </p>
                   <button
                     onClick={logout}
                     className="text-sm text-blue-400 hover:text-white"
@@ -158,16 +160,17 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         </div>
       </div>
 
-      {/* Main Content */}
+      {/* Main Content Area */}
       <div
-        className="z-10 flex h-screen flex-1 flex-col overflow-hidden"
+        className="z-10 flex h-screen flex-col"
         style={{
           marginLeft: sidebarOpen ? "250px" : "80px",
-          transition: "margin-left 0.3s",
+          width: sidebarOpen ? "calc(100% - 250px)" : "calc(100% - 80px)",
+          transition: "margin-left 0.3s, width 0.3s",
         }}
       >
         {/* Header - Fixed at top */}
-        <header className="flex h-16 items-center justify-between border-b border-blue-900/50 bg-gray-900/80 px-6 backdrop-blur-sm">
+        <header className="flex h-16 flex-shrink-0 items-center justify-between border-b border-blue-900/50 bg-gray-900/80 px-6 backdrop-blur-sm">
           <h2 className="bevel-text text-xl font-semibold">
             {isAdmin ? "Panel de Administración" : "Panel de Usuario"}
             {!isAdmin && user?.dataColumn && (
@@ -190,7 +193,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
 
         {/* Page Content - Scrollable area */}
         <main className="flex-1 overflow-y-auto bg-gray-800/90 p-6 backdrop-blur-sm">
-          {children}
+          <div className="mx-auto max-w-full">{children}</div>
         </main>
       </div>
     </div>

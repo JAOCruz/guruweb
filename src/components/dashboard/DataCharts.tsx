@@ -21,7 +21,6 @@ interface DataChartsProps {
   data: ExcelRow[];
 }
 
-const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884d8"];
 const NEON_COLORS = ["#61dafb", "#3c82f6", "#1ca0fb", "#0073e6", "#0e4377"];
 
 const DataCharts: React.FC<DataChartsProps> = ({ data }) => {

@@ -67,6 +67,27 @@ const ServicesSection: React.FC = () => {
         "Impresión de alta calidad para documentos legales, contratos y certificaciones.",
       image: "/impresion.png",
     },
+    {
+      id: 7,
+      name: "Compra de Impuestos",
+      description:
+        "Gestión y compra de impuestos internos con asesoría especializada para tus trámites fiscales.",
+      image: "/compra_impuestos.png",
+    },
+    {
+      id: 8,
+      name: "Artículos / Tienda",
+      description:
+        "Accede a nuestra tienda virtual con artículos y productos especializados para trámites legales.",
+      image: "/articulos_tienda.png",
+    },
+    {
+      id: 9,
+      name: "Mensajería Express",
+      description:
+        "Servicio de mensajería rápida y segura para el depósito y entrega de documentos importantes.",
+      image: "/mensajeria.png",
+    },
   ];
 
   return (
