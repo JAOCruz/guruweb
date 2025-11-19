@@ -1,92 +1,94 @@
 import React, { useState } from "react";
-import { ExcelRow } from "../../services/excelService";
+import { ExcelRow, USER_COLUMNS, WorkerKey } from "../../services/excelService";
 
 interface AdminDataTableProps {
   data: ExcelRow[];
   onSort: (column: string, direction: "asc" | "desc") => void; // Kept for API compatibility
 }
 
-// User columns in the data
-const USER_COLUMNS = ["HENGI", "MARLENI", "ISRAEL", "THAICAR"];
+interface UserServiceEntry {
+  service: string;
+  earnings: number;
+  client: string;
+  time: string;
+}
+
+type GroupedUserData = Record<WorkerKey, UserServiceEntry[]>;
 
 const AdminDataTable: React.FC<AdminDataTableProps> = ({ data }) => {
-  const [activeUser, setActiveUser] = useState<string | "all">("all");
+  const [activeUser, setActiveUser] = useState<WorkerKey | "all">("all");
 
   // Group data by user and type (service or earnings)
-  const groupDataByUser = () => {
-    const groupedData: Record<string, { services: any[]; earnings: any[] }> =
-      {};
+  const groupDataByUser = (): GroupedUserData => {
+    const groupedData = USER_COLUMNS.reduce<GroupedUserData>((acc, user) => {
+      acc[user] = [];
+      return acc;
+    }, {} as GroupedUserData);
 
-    // Initialize structure for each user
-    USER_COLUMNS.forEach((user) => {
-      groupedData[user] = {
-        services: [],
-        earnings: [],
-      };
-    });
+    const findDetailValue = (
+      currentIndex: number,
+      detailType: string,
+      user: WorkerKey,
+    ): string | number | undefined => {
+      const searchOffsets = [-3, -2, -1, 1, 2, 3];
 
-    // Process data rows
-    data.forEach((row) => {
-      if (row.DETALLE === "SERVICIO") {
-        USER_COLUMNS.forEach((user) => {
-          if (row[user] && row[user] !== "") {
-            groupedData[user].services.push({
-              service: row[user],
-              // Look for corresponding earnings in the data
-              earnings: findEarningsForService(data, user, row),
-            });
-          }
-        });
+      for (const offset of searchOffsets) {
+        const candidate = data[currentIndex + offset];
+        if (candidate && candidate.DETALLE === detailType) {
+          return candidate[user];
+        }
       }
+
+      return undefined;
+    };
+
+    data.forEach((row, index) => {
+      if (row.DETALLE !== "SERVICIO") {
+        return;
+      }
+
+      USER_COLUMNS.forEach((user) => {
+        const serviceValue = row[user];
+        if (!serviceValue) {
+          return;
+        }
+
+        const earnings = Number(findDetailValue(index, "GANANCIA", user)) || 0;
+        const clientValue = findDetailValue(index, "CLIENTE", user);
+        const timeValue = findDetailValue(index, "HORA", user);
+
+        groupedData[user].push({
+          service: String(serviceValue),
+          earnings,
+          client: clientValue ? String(clientValue) : "",
+          time: timeValue ? String(timeValue) : "",
+        });
+      });
     });
 
     return groupedData;
   };
 
-  // Find earnings for a specific service
-  const findEarningsForService = (
-    data: ExcelRow[],
-    user: string,
-    serviceRow: ExcelRow,
-  ): number | string => {
-    // Find the earnings row that corresponds to this service
-    const serviceIndex = data.indexOf(serviceRow);
-
-    // Check if there's a GANANCIA row before or after this service
-    if (serviceIndex > 0 && data[serviceIndex - 1].DETALLE === "GANANCIA") {
-      return data[serviceIndex - 1][user];
-    } else if (
-      serviceIndex < data.length - 1 &&
-      data[serviceIndex + 1].DETALLE === "GANANCIA"
-    ) {
-      return data[serviceIndex + 1][user];
-    }
-
-    return "";
-  };
-
   // Calculate totals for each user
-  const calculateUserTotals = (
-    groupedData: Record<string, { services: any[]; earnings: any[] }>,
-  ) => {
+  const calculateUserTotals = (groupedData: GroupedUserData) => {
     const totals: Record<
-      string,
+      WorkerKey,
       { total: number; adminShare: number; userShare: number }
-    > = {};
+    > = {} as Record<
+      WorkerKey,
+      { total: number; adminShare: number; userShare: number }
+    >;
 
     USER_COLUMNS.forEach((user) => {
-      const userServices = groupedData[user].services;
-      let total = 0;
-
-      userServices.forEach((service) => {
-        const earnings = Number(service.earnings) || 0;
-        total += earnings;
-      });
+      const total = groupedData[user].reduce(
+        (acc, service) => acc + service.earnings,
+        0,
+      );
 
       totals[user] = {
         total,
-        adminShare: total * 0.5, // 50% for admin
-        userShare: total * 0.5, // 50% for user
+        adminShare: Number((total * 0.5).toFixed(2)),
+        userShare: Number((total * 0.5).toFixed(2)),
       };
     });
 
@@ -96,17 +98,13 @@ const AdminDataTable: React.FC<AdminDataTableProps> = ({ data }) => {
   // Calculate admin's total earnings (50% from all users)
   const calculateAdminTotal = (
     userTotals: Record<
-      string,
+      WorkerKey,
       { total: number; adminShare: number; userShare: number }
     >,
   ) => {
-    let adminTotal = 0;
-
-    Object.values(userTotals).forEach((userTotal) => {
-      adminTotal += userTotal.adminShare;
-    });
-
-    return adminTotal;
+    return USER_COLUMNS.reduce((acc, user) => {
+      return acc + (userTotals[user]?.adminShare ?? 0);
+    }, 0);
   };
 
   const groupedData = groupDataByUser();
@@ -115,8 +113,8 @@ const AdminDataTable: React.FC<AdminDataTableProps> = ({ data }) => {
 
   // Sorting functionality removed as it's not needed in the current implementation
 
-  const handleUserChange = (user: string | "all") => {
-    setActiveUser(user);
+  const handleUserChange = (userKey: WorkerKey | "all") => {
+    setActiveUser(userKey);
   };
 
   return (
@@ -206,82 +204,118 @@ const AdminDataTable: React.FC<AdminDataTableProps> = ({ data }) => {
       </div>
 
       {/* User data tables */}
-      {(activeUser === "all" ? USER_COLUMNS : [activeUser]).map((user) => (
-        <div
-          key={user}
-          className="overflow-hidden rounded-lg border border-blue-900/30 bg-gray-800/80 backdrop-blur-sm"
-        >
-          <div className="border-b border-blue-900/30 bg-gray-900/80 px-4 py-3">
-            <h3 className="bevel-text text-lg font-medium">{user}</h3>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-700">
-              <thead className="bg-gray-800/90">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-400 uppercase">
-                    Servicio
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-400 uppercase">
-                    Ganancia
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-700/50 bg-gray-800/50">
-                {groupedData[user].services.length > 0 ? (
-                  groupedData[user].services.map((item, index) => (
-                    <tr
-                      key={`${user}-service-${index}`}
-                      className="hover:bg-blue-900/10"
-                    >
-                      <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-300">
-                        {item.service}
-                      </td>
-                      <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-300">
-                        {item.earnings}
+      {(activeUser === "all" ? USER_COLUMNS : [activeUser]).map(
+        (user: WorkerKey) => (
+          <div
+            key={user}
+            className="overflow-hidden rounded-2xl border border-blue-900/30 bg-gray-900/70 shadow-lg backdrop-blur-md"
+          >
+            <div className="border-b border-blue-900/30 bg-gray-950/80 px-6 py-4">
+              <h3 className="metallic-3d-text text-2xl font-semibold tracking-[0.25em] uppercase">
+                {user}
+              </h3>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-800 text-base">
+                <thead className="bg-gray-950/70">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-sm font-semibold tracking-[0.2em] text-blue-300 uppercase">
+                      Servicio
+                    </th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold tracking-[0.2em] text-blue-300 uppercase">
+                      Cliente
+                    </th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold tracking-[0.2em] text-blue-300 uppercase">
+                      Hora
+                    </th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold tracking-[0.2em] text-blue-300 uppercase">
+                      Ganancia
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-800/50 bg-gray-900/40">
+                  {groupedData[user].length > 0 ? (
+                    groupedData[user].map(
+                      (item: UserServiceEntry, index: number) => (
+                        <tr
+                          key={`${user}-service-${index}`}
+                          className="hover:bg-blue-900/10"
+                        >
+                          <td className="px-6 py-4 text-base whitespace-nowrap text-gray-200">
+                            {item.service}
+                          </td>
+                          <td className="px-6 py-4 text-base whitespace-nowrap text-gray-200">
+                            {item.client || "—"}
+                          </td>
+                          <td className="px-6 py-4 text-base whitespace-nowrap text-gray-200">
+                            {item.time || "—"}
+                          </td>
+                          <td className="px-6 py-4 text-base font-semibold whitespace-nowrap text-blue-200">
+                            {item.earnings}
+                          </td>
+                        </tr>
+                      ),
+                    )
+                  ) : (
+                    <tr>
+                      <td
+                        colSpan={4}
+                        className="px-6 py-4 text-center text-base text-gray-400"
+                      >
+                        No hay servicios registrados
                       </td>
                     </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td
-                      colSpan={2}
-                      className="px-6 py-4 text-center text-sm text-gray-400"
-                    >
-                      No hay servicios registrados
+                  )}
+                  {/* Total row */}
+                  <tr className="bg-gray-900/80">
+                    <td className="metallic-3d-text px-6 py-4 text-base font-bold tracking-[0.2em] whitespace-nowrap">
+                      Total
+                    </td>
+                    <td className="px-6 py-4 text-base whitespace-nowrap text-gray-300">
+                      —
+                    </td>
+                    <td className="px-6 py-4 text-base whitespace-nowrap text-gray-300">
+                      —
+                    </td>
+                    <td className="metallic-3d-text px-6 py-4 text-base font-bold tracking-[0.2em] whitespace-nowrap">
+                      {userTotals[user].total}
                     </td>
                   </tr>
-                )}
-                {/* Total row */}
-                <tr className="bg-gray-900/80">
-                  <td className="metallic-3d-text px-6 py-4 text-sm font-bold whitespace-nowrap">
-                    Total
-                  </td>
-                  <td className="metallic-3d-text px-6 py-4 text-sm font-bold whitespace-nowrap">
-                    {userTotals[user].total}
-                  </td>
-                </tr>
-                {/* Profit split rows */}
-                <tr className="bg-gray-900/50">
-                  <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-300">
-                    Admin (50%)
-                  </td>
-                  <td className="neon-text px-6 py-4 text-sm font-medium whitespace-nowrap text-green-400">
-                    {userTotals[user].adminShare}
-                  </td>
-                </tr>
-                <tr className="bg-gray-900/50">
-                  <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-300">
-                    {user} (50%)
-                  </td>
-                  <td className="neon-text px-6 py-4 text-sm font-medium whitespace-nowrap text-yellow-400">
-                    {userTotals[user].userShare}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+                  {/* Profit split rows */}
+                  <tr className="bg-gray-900/50">
+                    <td className="px-6 py-4 text-base whitespace-nowrap text-gray-300">
+                      Admin (50%)
+                    </td>
+                    <td className="px-6 py-4 text-base whitespace-nowrap text-gray-300">
+                      —
+                    </td>
+                    <td className="px-6 py-4 text-base whitespace-nowrap text-gray-300">
+                      —
+                    </td>
+                    <td className="neon-text px-6 py-4 text-base font-semibold whitespace-nowrap text-green-400">
+                      {userTotals[user].adminShare}
+                    </td>
+                  </tr>
+                  <tr className="bg-gray-900/50">
+                    <td className="px-6 py-4 text-base whitespace-nowrap text-gray-300">
+                      {user} (50%)
+                    </td>
+                    <td className="px-6 py-4 text-base whitespace-nowrap text-gray-300">
+                      —
+                    </td>
+                    <td className="px-6 py-4 text-base whitespace-nowrap text-gray-300">
+                      —
+                    </td>
+                    <td className="neon-text px-6 py-4 text-base font-semibold whitespace-nowrap text-yellow-400">
+                      {userTotals[user].userShare}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
-      ))}
+        ),
+      )}
     </div>
   );
 };

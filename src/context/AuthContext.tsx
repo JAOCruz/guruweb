@@ -18,7 +18,11 @@ type User = {
 
 type AuthContextType = {
   user: User | null;
-  login: (username: string, password: string) => Promise<boolean>;
+  login: (
+    username: string,
+    password: string,
+    rememberMe?: boolean,
+  ) => Promise<boolean>;
   logout: () => void;
   isAuthenticated: boolean;
   isAdmin: boolean;
@@ -70,9 +74,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
   // Check for existing session on mount
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
+    const storedUser =
+      localStorage.getItem("user") || sessionStorage.getItem("user");
     if (storedUser) {
-      const parsedUser = JSON.parse(storedUser);
+      const parsedUser: User = JSON.parse(storedUser);
       setUser(parsedUser);
       setIsAuthenticated(true);
       setIsAdmin(parsedUser.role === "admin");
@@ -83,6 +88,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   const login = async (
     username: string,
     password: string,
+    rememberMe = false,
   ): Promise<boolean> => {
     // In a real app, this would be an API call
     const foundUser = validCredentials.find(
@@ -98,7 +104,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       setUser(user);
       setIsAuthenticated(true);
       setIsAdmin(user.role === "admin");
-      localStorage.setItem("user", JSON.stringify(user));
+      // Clear existing storage to avoid stale sessions
+      localStorage.removeItem("user");
+      sessionStorage.removeItem("user");
+
+      const storage = rememberMe ? localStorage : sessionStorage;
+      storage.setItem("user", JSON.stringify(user));
       return true;
     }
     return false;
@@ -110,6 +121,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     setIsAuthenticated(false);
     setIsAdmin(false);
     localStorage.removeItem("user");
+    sessionStorage.removeItem("user");
   };
 
   const value = {

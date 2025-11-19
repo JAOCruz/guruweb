@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { NavLink } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 
 interface DashboardLayoutProps {
@@ -74,9 +75,15 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
 
           {/* Sidebar Navigation - Scrollable if needed */}
           <nav className="flex-1 space-y-2 overflow-y-auto px-2 py-6">
-            <a
-              href="/dashboard"
-              className="flex items-center rounded-lg px-4 py-3 text-gray-300 transition-colors hover:bg-blue-900/30 hover:text-white"
+            <NavLink
+              to="/dashboard"
+              className={({ isActive }) =>
+                `flex items-center rounded-lg px-4 py-3 transition-colors ${
+                  isActive
+                    ? "bg-blue-900/40 text-white"
+                    : "text-gray-300 hover:bg-blue-900/30 hover:text-white"
+                }`
+              }
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -93,10 +100,16 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                 />
               </svg>
               {sidebarOpen && <span className="ml-3">Dashboard</span>}
-            </a>
-            <a
-              href="/dashboard/data"
-              className="flex items-center rounded-lg px-4 py-3 text-gray-300 transition-colors hover:bg-blue-900/30 hover:text-white"
+            </NavLink>
+            <NavLink
+              to="/dashboard/data"
+              className={({ isActive }) =>
+                `flex items-center rounded-lg px-4 py-3 transition-colors ${
+                  isActive
+                    ? "bg-blue-900/40 text-white"
+                    : "text-gray-300 hover:bg-blue-900/30 hover:text-white"
+                }`
+              }
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -113,10 +126,16 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                 />
               </svg>
               {sidebarOpen && <span className="ml-3">Datos</span>}
-            </a>
-            <a
-              href="/dashboard/charts"
-              className="flex items-center rounded-lg px-4 py-3 text-gray-300 transition-colors hover:bg-blue-900/30 hover:text-white"
+            </NavLink>
+            <NavLink
+              to="/dashboard/charts"
+              className={({ isActive }) =>
+                `flex items-center rounded-lg px-4 py-3 transition-colors ${
+                  isActive
+                    ? "bg-blue-900/40 text-white"
+                    : "text-gray-300 hover:bg-blue-900/30 hover:text-white"
+                }`
+              }
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -133,7 +152,39 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                 />
               </svg>
               {sidebarOpen && <span className="ml-3">Gráficos</span>}
-            </a>
+            </NavLink>
+            <NavLink
+              to="/dashboard/flipbooks"
+              className={({ isActive }) =>
+                `flex items-center rounded-lg px-4 py-3 transition-colors ${
+                  isActive
+                    ? "bg-blue-900/40 text-white"
+                    : "text-gray-300 hover:bg-blue-900/30 hover:text-white"
+                }`
+              }
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6 flex-shrink-0"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 4h16v16H4z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M8 8h8v8H8z"
+                />
+              </svg>
+              {sidebarOpen && <span className="ml-3">Guías</span>}
+            </NavLink>
           </nav>
 
           {/* Sidebar Footer */}

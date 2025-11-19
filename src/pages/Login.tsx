@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 const Login: React.FC = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
@@ -24,7 +25,7 @@ const Login: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const success = await login(username, password);
+      const success = await login(username, password, rememberMe);
       if (!success) {
         setError("Usuario o contraseña incorrectos");
       } else {
@@ -112,6 +113,18 @@ const Login: React.FC = () => {
               className="w-full rounded-lg border border-gray-700 bg-gray-900/50 p-3 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
               placeholder="Ingrese su contraseña"
             />
+          </div>
+
+          <div className="mb-6 flex items-center justify-between text-sm text-gray-300">
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                className="h-4 w-4 rounded border border-gray-700 bg-gray-900/50 text-blue-500 focus:ring-blue-500"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+              />
+              Recordarme
+            </label>
           </div>
 
           <motion.button

@@ -1,13 +1,28 @@
 import * as XLSX from "xlsx";
 
 // Define types for our Excel data
+export type WorkerKey = "HENGI" | "MARLENI" | "ISRAEL" | "THAICAR";
+
 export interface ExcelRow {
-  HENGI: string | number;
-  MARLENI: string | number;
-  ISRAEL: string | number;
-  THAICAR: string | number;
-  [key: string]: any; // For any additional columns
+  DETALLE?: string;
+  Servicio?: string;
+  Ganancia?: string | number;
+  Valor?: string | number;
+  Cliente?: string;
+  Hora?: string;
+  HENGI?: string | number;
+  MARLENI?: string | number;
+  ISRAEL?: string | number;
+  THAICAR?: string | number;
+  [key: string]: string | number | undefined;
 }
+
+export const USER_COLUMNS: WorkerKey[] = [
+  "HENGI",
+  "MARLENI",
+  "ISRAEL",
+  "THAICAR",
+];
 
 // Cache mechanism
 const cache: {
@@ -96,7 +111,7 @@ export const filterData = (
         // Include the user's specific column and any non-user columns
         if (
           key === userDataColumn ||
-          !["HENGI", "MARLENI", "ISRAEL", "THAICAR"].includes(key)
+          !USER_COLUMNS.includes(key as WorkerKey)
         ) {
           filteredRow[key] = row[key];
         }
@@ -161,54 +176,63 @@ export const filterDataByUserAccess = (
 
   // Regular users can only see their own data in a simplified format
   if (userRole === "user" && userDataColumn) {
-    // Create a new array with restructured data
     const userRows: ExcelRow[] = [];
+    let totalGanancia = 0;
 
-    // Group by pairs of SERVICIO and GANANCIA
+    const findDetailValue = (
+      currentIndex: number,
+      detailType: string,
+    ): string | number | undefined => {
+      const searchOffsets = [-3, -2, -1, 1, 2, 3];
+
+      for (const offset of searchOffsets) {
+        const candidate = data[currentIndex + offset];
+        if (candidate && candidate.DETALLE === detailType) {
+          return candidate[userDataColumn];
+        }
+      }
+
+      return undefined;
+    };
+
     for (let i = 0; i < data.length; i++) {
       const row = data[i];
 
-      // Skip empty rows for this user
-      if (row[userDataColumn] === "" || row[userDataColumn] === undefined) {
+      if (
+        !row ||
+        row[userDataColumn] === "" ||
+        row[userDataColumn] === undefined
+      ) {
         continue;
       }
 
-      // Check if this is a service row
       if (row.DETALLE === "SERVICIO") {
         const serviceValue = row[userDataColumn];
-        let gainValue = "";
+        const gainValue = findDetailValue(i, "GANANCIA");
+        const clientValue = findDetailValue(i, "CLIENTE");
+        const timeValue = findDetailValue(i, "HORA");
 
-        // Look for the corresponding GANANCIA row
-        if (i > 0 && data[i - 1].DETALLE === "GANANCIA") {
-          gainValue = data[i - 1][userDataColumn];
-        } else if (i < data.length - 1 && data[i + 1].DETALLE === "GANANCIA") {
-          gainValue = data[i + 1][userDataColumn];
-        }
+        const numericGain = Number(gainValue) || 0;
+        totalGanancia += numericGain;
 
-        // Create a new row with Servicio and Ganancia columns
-        const newRow: ExcelRow = {
-          HENGI: "",
-          MARLENI: "",
-          ISRAEL: "",
-          THAICAR: "",
-          Servicio: serviceValue,
-          Ganancia: gainValue,
-        };
-
-        userRows.push(newRow);
-      } else if (row.DETALLE === "TOTAL" || row.DETALLE === "%") {
-        // Include totals and percentages
-        const newRow: ExcelRow = {
-          HENGI: "",
-          MARLENI: "",
-          ISRAEL: "",
-          THAICAR: "",
-          DETALLE: row.DETALLE,
-          Valor: row[userDataColumn],
-        };
-
-        userRows.push(newRow);
+        userRows.push({
+          Servicio: String(serviceValue ?? ""),
+          Ganancia: numericGain,
+          Cliente: clientValue ? String(clientValue) : "",
+          Hora: timeValue ? String(timeValue) : "",
+        });
       }
+    }
+
+    if (userRows.length > 0) {
+      const userShare = Number((totalGanancia * 0.5).toFixed(2));
+
+      userRows.push({
+        Servicio: `Total ${userDataColumn} (50%)`,
+        Ganancia: userShare,
+        Cliente: "",
+        Hora: "",
+      });
     }
 
     return userRows;
@@ -222,14 +246,13 @@ export const filterDataByUserAccess = (
  * Calculate user totals and profit splits
  */
 export const calculateUserTotals = (data: ExcelRow[]) => {
-  const userColumns = ["HENGI", "MARLENI", "ISRAEL", "THAICAR"];
   const totals: Record<
     string,
     { total: number; adminShare: number; userShare: number }
   > = {};
 
   // Initialize totals
-  userColumns.forEach((user) => {
+  USER_COLUMNS.forEach((user) => {
     totals[user] = {
       total: 0,
       adminShare: 0,
@@ -241,7 +264,7 @@ export const calculateUserTotals = (data: ExcelRow[]) => {
   const totalRow = data.find((row) => row.DETALLE === "TOTAL");
 
   if (totalRow) {
-    userColumns.forEach((user) => {
+    USER_COLUMNS.forEach((user) => {
       const total = Number(totalRow[user]) || 0;
       totals[user] = {
         total,
@@ -253,7 +276,7 @@ export const calculateUserTotals = (data: ExcelRow[]) => {
     // If no total row, calculate from individual entries
     data.forEach((row) => {
       if (row.DETALLE === "GANANCIA") {
-        userColumns.forEach((user) => {
+        USER_COLUMNS.forEach((user) => {
           const value = Number(row[user]) || 0;
           totals[user].total += value;
         });
@@ -261,7 +284,7 @@ export const calculateUserTotals = (data: ExcelRow[]) => {
     });
 
     // Calculate shares
-    userColumns.forEach((user) => {
+    USER_COLUMNS.forEach((user) => {
       totals[user].adminShare = totals[user].total * 0.5;
       totals[user].userShare = totals[user].total * 0.5;
     });
@@ -335,7 +358,6 @@ export const addServiceAndEarnings = (
   newData.splice(insertIndex, 0, earningsRow, serviceRow);
 
   // Update totals
-  const userColumns = ["HENGI", "MARLENI", "ISRAEL", "THAICAR"];
   const totalRow = newData.find((row) => row.DETALLE === "TOTAL");
   const percentRow = newData.find((row) => row.DETALLE === "%");
 
@@ -357,67 +379,96 @@ export const addServiceAndEarnings = (
  */
 export const getSampleData = (): ExcelRow[] => {
   return [
-    { DETALLE: "GANANCIA", HENGI: 80, MARLENI: 200, ISRAEL: 100, THAICAR: 500 },
+    {
+      DETALLE: "GANANCIA",
+      HENGI: 120,
+      MARLENI: 90,
+      ISRAEL: 150,
+      THAICAR: 100,
+    },
+    {
+      DETALLE: "CLIENTE",
+      HENGI: "Carlos Ruiz",
+      MARLENI: "Ana Paredes",
+      ISRAEL: "Luis Perdomo",
+      THAICAR: "Verónica Diaz",
+    },
+    {
+      DETALLE: "HORA",
+      HENGI: "09:15",
+      MARLENI: "10:05",
+      ISRAEL: "09:45",
+      THAICAR: "08:30",
+    },
     {
       DETALLE: "SERVICIO",
-      HENGI: "IMPRESION SEÑOR",
-      MARLENI: "DIGITACION DIONICIO",
-      ISRAEL: "IMPRESION DANILO",
-      THAICAR: "BONO ENTRENAMIENTO",
+      HENGI: "Impresión certificada",
+      MARLENI: "Digitalización avanzada",
+      ISRAEL: "Asesoría fiscal",
+      THAICAR: "Entrega de documentación",
     },
     {
       DETALLE: "GANANCIA",
+      HENGI: 200,
+      MARLENI: 150,
+      ISRAEL: 220,
+      THAICAR: 160,
+    },
+    {
+      DETALLE: "CLIENTE",
+      HENGI: "María Gómez",
+      MARLENI: "Javier Tejada",
+      ISRAEL: "Empresa Atlántida",
+      THAICAR: "Samuel Ortiz",
+    },
+    {
+      DETALLE: "HORA",
+      HENGI: "11:20",
+      MARLENI: "13:10",
+      ISRAEL: "12:40",
+      THAICAR: "14:05",
+    },
+    {
+      DETALLE: "SERVICIO",
+      HENGI: "Traducción jurada",
+      MARLENI: "Gestión de firma digital",
+      ISRAEL: "Regularización mercantil",
+      THAICAR: "Recolección de impuestos",
+    },
+    {
+      DETALLE: "GANANCIA",
+      HENGI: 180,
+      MARLENI: 210,
+      ISRAEL: 260,
+      THAICAR: 190,
+    },
+    {
+      DETALLE: "CLIENTE",
+      HENGI: "Gerardo Lora",
+      MARLENI: "Studio Creativo Z",
+      ISRAEL: "Clínica Nova",
+      THAICAR: "Logística Caribe",
+    },
+    {
+      DETALLE: "HORA",
+      HENGI: "15:25",
+      MARLENI: "17:40",
+      ISRAEL: "16:15",
+      THAICAR: "18:00",
+    },
+    {
+      DETALLE: "SERVICIO",
+      HENGI: "Revisión de contratos",
+      MARLENI: "Automatización de formularios",
+      ISRAEL: "Auditoría de cumplimiento",
+      THAICAR: "Mensajería express premium",
+    },
+    {
+      DETALLE: "TOTAL",
       HENGI: 500,
-      MARLENI: 500,
-      ISRAEL: 500,
-      THAICAR: 200,
-    },
-    {
-      DETALLE: "SERVICIO",
-      HENGI: "TRADUCCION SEÑOR",
-      MARLENI: "DOCUMENTO GREY",
-      ISRAEL: "MATRICULA EDITABLE",
-      THAICAR: "CV DEL ING. JOHNNY",
-    },
-    { DETALLE: "GANANCIA", HENGI: 20, MARLENI: "", ISRAEL: 150, THAICAR: "" },
-    {
-      DETALLE: "SERVICIO",
-      HENGI: "",
-      MARLENI: "",
-      ISRAEL: "INSTANCIA ING. JOHNNY",
-      THAICAR: "",
-    },
-    { DETALLE: "GANANCIA", HENGI: "", MARLENI: "", ISRAEL: 1000, THAICAR: "" },
-    {
-      DETALLE: "SERVICIO",
-      HENGI: "",
-      MARLENI: "",
-      ISRAEL: "SEÑOR BERNARDO",
-      THAICAR: "",
-    },
-    { DETALLE: "GANANCIA", HENGI: "", MARLENI: "", ISRAEL: 200, THAICAR: "" },
-    {
-      DETALLE: "SERVICIO",
-      HENGI: "",
-      MARLENI: "",
-      ISRAEL: "SEÑOR JACINTO",
-      THAICAR: "",
-    },
-    { DETALLE: "GANANCIA", HENGI: "", MARLENI: 100, ISRAEL: 650, THAICAR: 100 },
-    {
-      DETALLE: "SERVICIO",
-      HENGI: "",
-      MARLENI: "",
-      ISRAEL: "INSTALACION MICROSOFT WORD",
-      THAICAR: "COMPLETIVO",
-    },
-    { DETALLE: "TOTAL", HENGI: 600, MARLENI: 700, ISRAEL: 1950, THAICAR: 700 },
-    {
-      DETALLE: "GANANCIA",
-      HENGI: 300,
-      MARLENI: 350,
-      ISRAEL: 975,
-      THAICAR: 350,
+      MARLENI: 450,
+      ISRAEL: 630,
+      THAICAR: 450,
     },
     {
       DETALLE: "%",

@@ -5,6 +5,7 @@ import DataTable from "../components/dashboard/DataTable";
 import DataCharts from "../components/dashboard/DataCharts";
 import AdminDataTable from "../components/dashboard/AdminDataTable";
 import DataModificationForm from "../components/dashboard/DataModificationForm";
+import FlipbooksSection from "../components/dashboard/FlipbooksSection";
 import { useAuth } from "../context/AuthContext";
 import {
   ExcelRow,
@@ -17,6 +18,7 @@ import {
   calculateUserTotals,
   calculateAdminTotal,
 } from "../services/excelService";
+import { useLocation } from "react-router-dom";
 
 const Dashboard: React.FC = () => {
   const { user, isAdmin } = useAuth();
@@ -26,6 +28,12 @@ const Dashboard: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState<"table" | "charts">("table");
+  const location = useLocation();
+
+  const pathSegments = location.pathname.split("/").filter(Boolean);
+  const currentView = pathSegments[1] ?? "";
+  const isFlipbooksView = currentView === "flipbooks";
+  const isChartsView = currentView === "charts";
 
   // Fetch data on component mount
   useEffect(() => {
@@ -66,6 +74,14 @@ const Dashboard: React.FC = () => {
     loadData();
   }, [user]);
 
+  useEffect(() => {
+    if (isChartsView) {
+      setActiveTab("charts");
+    } else if (!isFlipbooksView) {
+      setActiveTab("table");
+    }
+  }, [isChartsView, isFlipbooksView]);
+
   // Handle search
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const term = e.target.value;
@@ -87,13 +103,18 @@ const Dashboard: React.FC = () => {
 
   // Handle adding new service and earnings
   const handleAddService = (
-    user: string,
+    targetUser: string,
     service: string,
     earnings: number,
   ) => {
     try {
       // Add the new service and earnings to the data
-      const updatedData = addServiceAndEarnings(data, user, service, earnings);
+      const updatedData = addServiceAndEarnings(
+        data,
+        targetUser,
+        service,
+        earnings,
+      );
       setData(updatedData);
 
       // Update filtered data based on user role
@@ -108,12 +129,20 @@ const Dashboard: React.FC = () => {
       setFilteredData(updatedFilteredData);
 
       // Show success message
-      alert(`Servicio "${service}" agregado correctamente para ${user}`);
+      alert(`Servicio "${service}" agregado correctamente para ${targetUser}`);
     } catch (error) {
       console.error("Error adding service:", error);
       alert("Error al agregar el servicio. Por favor intente nuevamente.");
     }
   };
+
+  if (isFlipbooksView) {
+    return (
+      <DashboardLayout>
+        <FlipbooksSection />
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>

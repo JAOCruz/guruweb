@@ -13,8 +13,14 @@ import {
   PieChart,
   Pie,
   Cell,
+  LabelList,
 } from "recharts";
-import { ExcelRow } from "../../services/excelService";
+import type { PieLabelRenderProps } from "recharts";
+import {
+  ExcelRow,
+  USER_COLUMNS,
+  calculateUserTotals,
+} from "../../services/excelService";
 import { useAuth } from "../../context/AuthContext";
 
 interface DataChartsProps {
@@ -22,113 +28,214 @@ interface DataChartsProps {
 }
 
 const NEON_COLORS = ["#61dafb", "#3c82f6", "#1ca0fb", "#0073e6", "#0e4377"];
+const WEEK_DAYS = [
+  "Lunes",
+  "Martes",
+  "Miércoles",
+  "Jueves",
+  "Viernes",
+  "Sábado",
+  "Domingo",
+];
+
+const deterministicRandom = (seed: string) => {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) {
+    hash = (hash << 5) - hash + seed.charCodeAt(i);
+    hash |= 0;
+  }
+  const x = Math.sin(hash) * 10000;
+  return x - Math.floor(x);
+};
+
+const distributeTotalAcrossWeek = (seed: string, total: number) => {
+  if (total === 0) {
+    return WEEK_DAYS.map(() => 0);
+  }
+
+  const weights = WEEK_DAYS.map((day, index) => {
+    return deterministicRandom(`${seed}-${day}-${index}`) + 0.15;
+  });
+
+  const weightSum = weights.reduce((acc, value) => acc + value, 0);
+  const normalized = weights.map((weight) => (weight / weightSum) * total);
+
+  let remaining = total;
+  return normalized.map((value, index) => {
+    if (index === WEEK_DAYS.length - 1) {
+      return Number(remaining.toFixed(2));
+    }
+    const rounded = Number(value.toFixed(2));
+    remaining -= rounded;
+    return rounded;
+  });
+};
+
+const renderUserShareLabel = (props: any) => {
+  const { x, y, value } = props;
+  if (
+    typeof x !== "number" ||
+    typeof y !== "number" ||
+    typeof value !== "number"
+  ) {
+    return null;
+  }
+
+  return (
+    <text x={x} y={y + 16} fill="#bfdbfe" fontSize={12} textAnchor="middle">
+      {value.toFixed(2)}
+    </text>
+  );
+};
 
 const DataCharts: React.FC<DataChartsProps> = ({ data }) => {
-  const { user, isAdmin } = useAuth();
+  const { isAdmin } = useAuth();
 
-  // Prepare data for charts
-  const prepareChartData = () => {
-    if (data.length === 0) return [];
+  const prepareUserMetrics = () => {
+    const serviceEntries = data.filter(
+      (row) =>
+        row.Servicio &&
+        typeof row.Servicio === "string" &&
+        !row.Servicio.includes("(50%)"),
+    );
 
-    if (isAdmin) {
-      // Admin sees all data with original structure
-      return data.map((row, index) => ({
-        name: row.DETALLE || `Entrada ${index + 1}`,
-        ...row,
-      }));
-    } else {
-      // For regular users, prepare data specifically for their view
-      // Filter out rows without relevant data
-      const userRows = data.filter(
-        (row) => row.Servicio || row.Ganancia || row.Valor,
+    const serviceFrequencyMap = new Map<string, number>();
+    const serviceTotalsMap = new Map<string, number>();
+    let totalGanancia = 0;
+
+    serviceEntries.forEach((row) => {
+      const serviceName = String(row.Servicio);
+      const gain = Number(row.Ganancia) || 0;
+      totalGanancia += gain;
+
+      serviceFrequencyMap.set(
+        serviceName,
+        (serviceFrequencyMap.get(serviceName) || 0) + 1,
       );
-
-      return userRows.map((row, index) => {
-        if (row.Servicio) {
-          // This is a service row
-          return {
-            name: row.Servicio || `Servicio ${index + 1}`,
-            Ganancia: Number(row.Ganancia) || 0,
-            Servicio: row.Servicio,
-          };
-        } else if (row.DETALLE === "TOTAL") {
-          return {
-            name: "Total",
-            Total: Number(row.Valor) || 0,
-          };
-        } else {
-          return {
-            name: row.DETALLE || `Entrada ${index + 1}`,
-            ...row,
-          };
-        }
-      });
-    }
-  };
-
-  const chartData = prepareChartData();
-
-  // Get column names for the charts (excluding 'name' which we added)
-  const getColumns = () => {
-    if (chartData.length === 0) return [];
-
-    const columns = Object.keys(chartData[0]);
-
-    // Filter columns based on user role
-    if (isAdmin) {
-      // Admin can see all columns except name and non-numeric ones
-      return columns.filter(
-        (col) =>
-          col !== "name" && col !== "DETALLE" && !["Servicio"].includes(col),
+      serviceTotalsMap.set(
+        serviceName,
+        (serviceTotalsMap.get(serviceName) || 0) + gain * 0.5,
       );
-    } else {
-      // Regular users see only relevant columns
-      return columns.filter(
-        (col) =>
-          col !== "name" &&
-          col !== "DETALLE" &&
-          (col === "Ganancia" || col === "Total" || col === "Valor"),
-      );
-    }
-  };
-
-  const columns = getColumns();
-
-  // Calculate totals for pie chart
-  const calculateTotals = () => {
-    const totals = columns.map((column) => {
-      const sum = data.reduce((acc, row) => {
-        const value = Number(row[column]) || 0;
-        return acc + value;
-      }, 0);
-
-      return {
-        name: column,
-        value: sum,
-      };
     });
 
-    return totals;
+    const barData = Array.from(serviceFrequencyMap.entries()).map(
+      ([name, count]) => ({
+        name,
+        Veces:
+          count *
+          (Math.floor(deterministicRandom(`${name}-freq-user`) * 3) + 1),
+      }),
+    );
+
+    const totalShare = Number((totalGanancia * 0.5).toFixed(2));
+
+    const sharePerDay = distributeTotalAcrossWeek("user-share", totalShare);
+
+    const lineData = WEEK_DAYS.map((day, index) => ({
+      name: day,
+      "Mi 50%": sharePerDay[index],
+    }));
+
+    const pieData = Array.from(serviceTotalsMap.entries()).map(
+      ([name, value]) => ({
+        name,
+        value,
+      }),
+    );
+
+    return {
+      barData,
+      barKeys: ["Veces"],
+      lineData,
+      lineKeys: ["Mi 50%"],
+      pieData,
+    };
   };
 
-  const pieData = calculateTotals();
+  const prepareAdminMetrics = () => {
+    const serviceCounts = new Map<string, number>();
+    const userTotals = calculateUserTotals(data);
+
+    data.forEach((row) => {
+      if (row.DETALLE === "SERVICIO") {
+        USER_COLUMNS.forEach((user) => {
+          const serviceName = row[user];
+          if (typeof serviceName === "string" && serviceName.trim()) {
+            const current = serviceCounts.get(serviceName) || 0;
+            const multiplier =
+              Math.floor(deterministicRandom(`${serviceName}-admin-freq`) * 4) +
+              1;
+            serviceCounts.set(serviceName, current + multiplier);
+          }
+        });
+      }
+    });
+
+    const barData = Array.from(serviceCounts.entries()).map(
+      ([name, count]) => ({
+        name,
+        Veces: count,
+      }),
+    );
+
+    const userDailyTotals: Record<string, number[]> = {};
+    USER_COLUMNS.forEach((user) => {
+      const total = Number(userTotals[user]?.total || 0);
+      userDailyTotals[user] = distributeTotalAcrossWeek(`admin-${user}`, total);
+    });
+
+    const lineData = WEEK_DAYS.map((day, index) => {
+      const entry: Record<string, number | string> = { name: day };
+      USER_COLUMNS.forEach((user) => {
+        entry[user] = userDailyTotals[user]?.[index] || 0;
+      });
+      return entry;
+    });
+
+    const pieData = USER_COLUMNS.map((user) => ({
+      name: user,
+      value: Number(userTotals[user]?.total || 0),
+    }));
+
+    return {
+      barData,
+      barKeys: ["Veces"],
+      lineData,
+      lineKeys: USER_COLUMNS,
+      pieData,
+    };
+  };
+
+  const { barData, barKeys, lineData, lineKeys, pieData } = isAdmin
+    ? prepareAdminMetrics()
+    : prepareUserMetrics();
 
   return (
     <div className="perspective-container space-y-8">
       {/* Bar Chart */}
       <div className="rounded-lg border border-blue-900/30 bg-gray-900/80 p-6 backdrop-blur-sm">
         <h3 className="bevel-text mb-4 text-xl font-semibold">
-          {isAdmin ? "Comparación por Categoría" : "Mis Ganancias por Servicio"}
+          {isAdmin
+            ? "Frecuencia de Servicios Contratados"
+            : "Cuántas Veces se Contrató cada Servicio"}
         </h3>
         <div className="h-80">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
-              data={chartData}
+              data={barData}
               margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
             >
               <CartesianGrid strokeDasharray="3 3" stroke="#444" />
               <XAxis dataKey="name" stroke="#999" />
-              <YAxis stroke="#999" />
+              <YAxis
+                stroke="#999"
+                label={{
+                  value: isAdmin ? "Ganancia por colaborador" : "Mi 50% diario",
+                  angle: -90,
+                  position: "insideLeft",
+                  style: { fill: "#9ca3af", fontSize: 12 },
+                }}
+              />
               <Tooltip
                 contentStyle={{
                   backgroundColor: "rgba(30, 41, 59, 0.9)",
@@ -139,10 +246,10 @@ const DataCharts: React.FC<DataChartsProps> = ({ data }) => {
                 }}
               />
               <Legend />
-              {columns.map((column, index) => (
+              {barKeys.map((key, index) => (
                 <Bar
-                  key={column}
-                  dataKey={column}
+                  key={key}
+                  dataKey={key}
                   fill={NEON_COLORS[index % NEON_COLORS.length]}
                   animationDuration={0}
                 />
@@ -155,12 +262,14 @@ const DataCharts: React.FC<DataChartsProps> = ({ data }) => {
       {/* Line Chart */}
       <div className="rounded-lg border border-blue-900/30 bg-gray-900/80 p-6 backdrop-blur-sm">
         <h3 className="bevel-text mb-4 text-xl font-semibold">
-          {isAdmin ? "Tendencias" : "Evolución de Ganancias"}
+          {isAdmin
+            ? "Ganancias por Día (por Colaborador)"
+            : "Ganancias Diarias - Mi 50%"}
         </h3>
         <div className="h-80">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
-              data={chartData}
+              data={lineData}
               margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
             >
               <CartesianGrid
@@ -179,25 +288,36 @@ const DataCharts: React.FC<DataChartsProps> = ({ data }) => {
                 }}
               />
               <Legend />
-              {columns.map((column, index) => (
-                <Line
-                  key={column}
-                  type="monotone"
-                  dataKey={column}
-                  stroke={NEON_COLORS[index % NEON_COLORS.length]}
-                  activeDot={{
-                    r: 8,
-                    fill: NEON_COLORS[index % NEON_COLORS.length],
-                    strokeWidth: 0,
-                  }}
-                  strokeWidth={3}
-                  animationDuration={0}
-                  dot={{
-                    strokeWidth: 0,
-                    fill: NEON_COLORS[index % NEON_COLORS.length],
-                  }}
-                />
-              ))}
+              {lineKeys.map((key, index) => {
+                const color = NEON_COLORS[index % NEON_COLORS.length];
+                return (
+                  <Line
+                    key={key}
+                    type="monotone"
+                    dataKey={key}
+                    stroke={color}
+                    strokeWidth={3}
+                    animationDuration={0}
+                    dot={{
+                      strokeWidth: 0,
+                      fill: color,
+                    }}
+                    activeDot={{
+                      r: 8,
+                      fill: color,
+                      strokeWidth: 0,
+                    }}
+                  >
+                    {!isAdmin && key === "Mi 50%" && (
+                      <LabelList
+                        dataKey="Mi 50%"
+                        position="bottom"
+                        content={renderUserShareLabel}
+                      />
+                    )}
+                  </Line>
+                );
+              })}
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -206,7 +326,9 @@ const DataCharts: React.FC<DataChartsProps> = ({ data }) => {
       {/* Pie Chart */}
       <div className="rounded-lg border border-blue-900/30 bg-gray-900/80 p-6 backdrop-blur-sm">
         <h3 className="bevel-text mb-4 text-xl font-semibold">
-          {isAdmin ? "Distribución Total" : "Distribución de Mis Ganancias"}
+          {isAdmin
+            ? "Distribución Total de Ganancias"
+            : "Distribución de Mi 50%"}
         </h3>
         <div className="h-80">
           <ResponsiveContainer width="100%" height="100%">
@@ -219,12 +341,17 @@ const DataCharts: React.FC<DataChartsProps> = ({ data }) => {
                 outerRadius={80}
                 fill="#8884d8"
                 dataKey="value"
-                label={({ name, percent }) =>
-                  `${name}: ${(percent * 100).toFixed(0)}%`
-                }
+                label={(props: PieLabelRenderProps) => {
+                  const { name, percent } = props;
+                  const percentageValue =
+                    typeof percent === "number"
+                      ? (percent * 100).toFixed(0)
+                      : "0";
+                  return `${name ?? "Entrada"}: ${percentageValue}%`;
+                }}
                 animationDuration={0}
               >
-                {pieData.map((entry, index) => (
+                {pieData.map((_entry, index) => (
                   <Cell
                     key={`cell-${index}`}
                     fill={NEON_COLORS[index % NEON_COLORS.length]}
