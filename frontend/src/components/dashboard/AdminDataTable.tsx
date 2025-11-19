@@ -1,9 +1,11 @@
 import React, { useState } from "react";
 import { ExcelRow, USER_COLUMNS, WorkerKey } from "../../services/excelService";
+import { servicesAPI } from "../../services/api";
 
 interface AdminDataTableProps {
   data: ExcelRow[];
-  onSort: (column: string, direction: "asc" | "desc") => void; // Kept for API compatibility
+  onSort: (column: string, direction: "asc" | "desc") => void;
+  onServiceDeleted?: () => void;
 }
 
 interface UserServiceEntry {
@@ -11,12 +13,17 @@ interface UserServiceEntry {
   earnings: number;
   client: string;
   time: string;
+  id?: number;
 }
 
 type GroupedUserData = Record<WorkerKey, UserServiceEntry[]>;
 
-const AdminDataTable: React.FC<AdminDataTableProps> = ({ data }) => {
+const AdminDataTable: React.FC<AdminDataTableProps> = ({
+  data,
+  onServiceDeleted,
+}) => {
   const [activeUser, setActiveUser] = useState<WorkerKey | "all">("all");
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   // Group data by user and type (service or earnings)
   const groupDataByUser = (): GroupedUserData => {
@@ -41,6 +48,28 @@ const AdminDataTable: React.FC<AdminDataTableProps> = ({ data }) => {
 
       return undefined;
     };
+    const findServiceId = (
+      currentIndex: number,
+      user: WorkerKey,
+    ): number | undefined => {
+      const searchOffsets = [-3, -2, -1, 0, 1, 2, 3];
+
+      for (const offset of searchOffsets) {
+        const candidate = data[currentIndex + offset];
+        if (
+          candidate &&
+          candidate.id &&
+          candidate.DETALLE === "SERVICIO" &&
+          candidate[user]
+        ) {
+          // Ensure we return a number
+          const id = candidate.id;
+          return typeof id === "number" ? id : parseInt(String(id), 10);
+        }
+      }
+
+      return undefined;
+    };
 
     data.forEach((row, index) => {
       if (row.DETALLE !== "SERVICIO") {
@@ -57,11 +86,21 @@ const AdminDataTable: React.FC<AdminDataTableProps> = ({ data }) => {
         const clientValue = findDetailValue(index, "CLIENTE", user);
         const timeValue = findDetailValue(index, "HORA", user);
 
+        // Ensure serviceId is a number
+        let serviceId: number | undefined = undefined;
+        if (row.id) {
+          serviceId =
+            typeof row.id === "number" ? row.id : parseInt(String(row.id), 10);
+        } else {
+          serviceId = findServiceId(index, user);
+        }
+
         groupedData[user].push({
           service: String(serviceValue),
           earnings,
           client: clientValue ? String(clientValue) : "",
           time: timeValue ? String(timeValue) : "",
+          id: serviceId,
         });
       });
     });
@@ -71,10 +110,7 @@ const AdminDataTable: React.FC<AdminDataTableProps> = ({ data }) => {
 
   // Calculate totals for each user
   const calculateUserTotals = (groupedData: GroupedUserData) => {
-    const totals: Record<
-      WorkerKey,
-      { total: number; adminShare: number; userShare: number }
-    > = {} as Record<
+    const totals = {} as Record<
       WorkerKey,
       { total: number; adminShare: number; userShare: number }
     >;
@@ -107,11 +143,36 @@ const AdminDataTable: React.FC<AdminDataTableProps> = ({ data }) => {
     }, 0);
   };
 
+  const handleDelete = async (serviceId: number | undefined) => {
+    if (!serviceId) {
+      alert("No se puede eliminar: ID de servicio no encontrado");
+      return;
+    }
+
+    if (
+      !window.confirm("¿Estás seguro de que quieres eliminar este servicio?")
+    ) {
+      return;
+    }
+
+    try {
+      setDeletingId(serviceId);
+      await servicesAPI.deleteService(serviceId);
+
+      if (onServiceDeleted) {
+        onServiceDeleted();
+      }
+    } catch (error: any) {
+      console.error("Error deleting service:", error);
+      alert(error.response?.data?.error || "Error al eliminar el servicio");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   const groupedData = groupDataByUser();
   const userTotals = calculateUserTotals(groupedData);
   const adminTotal = calculateAdminTotal(userTotals);
-
-  // Sorting functionality removed as it's not needed in the current implementation
 
   const handleUserChange = (userKey: WorkerKey | "all") => {
     setActiveUser(userKey);
@@ -231,6 +292,9 @@ const AdminDataTable: React.FC<AdminDataTableProps> = ({ data }) => {
                     <th className="px-6 py-4 text-left text-sm font-semibold tracking-[0.2em] text-blue-300 uppercase">
                       Ganancia
                     </th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold tracking-[0.2em] text-blue-300 uppercase">
+                      Acción
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-800/50 bg-gray-900/40">
@@ -253,13 +317,24 @@ const AdminDataTable: React.FC<AdminDataTableProps> = ({ data }) => {
                           <td className="px-6 py-4 text-base font-semibold whitespace-nowrap text-blue-200">
                             {item.earnings}
                           </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <button
+                              onClick={() => handleDelete(item.id)}
+                              disabled={deletingId === item.id}
+                              className="rounded-md border border-red-900/30 bg-red-500/20 px-3 py-1 text-sm text-red-300 hover:bg-red-500/30 disabled:opacity-50"
+                            >
+                              {deletingId === item.id
+                                ? "Eliminando..."
+                                : "Eliminar"}
+                            </button>
+                          </td>
                         </tr>
                       ),
                     )
                   ) : (
                     <tr>
                       <td
-                        colSpan={4}
+                        colSpan={5}
                         className="px-6 py-4 text-center text-base text-gray-400"
                       >
                         No hay servicios registrados
@@ -280,6 +355,7 @@ const AdminDataTable: React.FC<AdminDataTableProps> = ({ data }) => {
                     <td className="metallic-3d-text px-6 py-4 text-base font-bold tracking-[0.2em] whitespace-nowrap">
                       {userTotals[user].total}
                     </td>
+                    <td className="px-6 py-4"></td>
                   </tr>
                   {/* Profit split rows */}
                   <tr className="bg-gray-900/50">
@@ -295,6 +371,7 @@ const AdminDataTable: React.FC<AdminDataTableProps> = ({ data }) => {
                     <td className="neon-text px-6 py-4 text-base font-semibold whitespace-nowrap text-green-400">
                       {userTotals[user].adminShare}
                     </td>
+                    <td className="px-6 py-4"></td>
                   </tr>
                   <tr className="bg-gray-900/50">
                     <td className="px-6 py-4 text-base whitespace-nowrap text-gray-300">
@@ -309,6 +386,7 @@ const AdminDataTable: React.FC<AdminDataTableProps> = ({ data }) => {
                     <td className="neon-text px-6 py-4 text-base font-semibold whitespace-nowrap text-yellow-400">
                       {userTotals[user].userShare}
                     </td>
+                    <td className="px-6 py-4"></td>
                   </tr>
                 </tbody>
               </table>
