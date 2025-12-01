@@ -8,13 +8,34 @@ const servicesRoutes = require("./routes/services");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
+// CORS Middleware - Permite múltiples puertos en desarrollo
+const allowedOrigins = [
+  "https://gurusoluciones.netlify.app",
+  "https://gurusolucionesrd.com",
+  "http://localhost:5173",
+  "http://localhost:5174", // Puerto alternativo de Vite
+  "http://localhost:5175", // Por si acaso
+];
+
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:5173",
+    origin: function (origin, callback) {
+      // Permite requests sin origin (como Postman, curl, etc.)
+      if (!origin) return callback(null, true);
+
+      if (
+        allowedOrigins.indexOf(origin) !== -1 ||
+        process.env.NODE_ENV !== "production"
+      ) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
   })
 );
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -61,11 +82,12 @@ app.use((err, req, res, next) => {
 });
 
 // Start server
-app.listen(PORT, () => {
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📍 Environment: ${process.env.NODE_ENV || "development"}`);
   console.log(`🔗 API: http://localhost:${PORT}`);
   console.log(`🏥 Health check: http://localhost:${PORT}/health`);
+  console.log(`✅ CORS enabled for: ${allowedOrigins.join(", ")}`);
 });
 
 module.exports = app;
