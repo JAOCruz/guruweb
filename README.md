@@ -1,76 +1,368 @@
-<div align="center"><img src = "https://user-images.githubusercontent.com/31413093/197097625-5b3bd3cf-2bd6-4a3a-8059-a1fe9f28100b.svg" height="100px" alt="My Happy SVG"/></div>
+# Guruweb Dashboard
 
-<h2 align="center">vite-react-framer-starter</h2>
+Full-stack dashboard application for managing services and earnings with admin/employee roles.
 
-<div align="center">
-<a href="https://reactjs.org/"><image src="https://img.shields.io/static/v1?label=React&message=v19&style=flat-square&logo=react&color=61DAFB"/></a> <a href="https://www.typescriptlang.org/"><image src="https://img.shields.io/static/v1?label=TypeScript&message=v5&style=flat-square&logo=typescript&color=3178C6"/></a> <a href="https://www.typescriptlang.org/"><image src="https://img.shields.io/static/v1?label=Tailwind%20CSS&message=v4&style=flat-square&logo=tailwindcss&color=06B6D4"/></a> <a href="https://cn.vitejs.dev/"><image src="https://img.shields.io/static/v1?label=Vite&message=v7&style=flat-square&logo=vite&color=00ccb1"/> <a href="https://cn.vitejs.dev/"><image src="https://img.shields.io/static/v1?label=Framer&message=v12&style=flat-square&logo=framer&color=ff57c8"/></a>
-</div>
+## 🏗️ Architecture
 
-## Introduction
-
-A starter [Vite](https://vitejs.dev/) template having:
-
-- React
-- TypeScript
-- Vite
-- Tailwind CSS
-- Framer Motion
-
-and some elegant framer motion [examples components](https://github.com/matozz/vite-react-framer-starter/tree/main/src/components)
-
-## Install
-
-> This project uses [node](http://nodejs.org) and a package manager ([npm](https://npmjs.com), [yarn](https://yarnpkg.com/) or [pnpm](https://pnpm.io/)). Go check them out if you don't have them locally installed.
-
-Then you need a copy of this repository. You can [download](https://github.com/matozz/vite-react-framer-starter) a copy as zip but [degit](https://github.com/Rich-Harris/degit) is recommended.
-
-After you installed degit, please excute the following commandd:
-
-```sh
-$ cd path-to-save-your-project
-$ degit matozz/vite-react-framer-starter your-project-name
+```
+guruweb/
+├── frontend/          # React + TypeScript + Vite
+├── backend/           # Node.js + Express + PostgreSQL
+├── docker-compose.yml # Container orchestration
+└── .env              # Environment variables
 ```
 
-After getting a copy of this repository, you can use your package manager to install dependecies:
+## 📋 Prerequisites
 
-```sh
-$ cd path-to-your-project
-$ pnpm install
+- Docker & Docker Compose
+- Node.js 18+ (for local development)
+- Git
 
-# npm install
-# yarn install
+## 🚀 Quick Start
+
+### 1. Clone and Setup
+
+```bash
+# Navigate to your project
+cd GURUWEB
+
+# Copy environment variables
+cp .env.example .env
+
+# Edit .env and change passwords/secrets
+nano .env
 ```
 
-## Usage
+### 2. Start with Docker
 
-Let's run!
+```bash
+# Build and start all services
+docker-compose up -d
 
-```sh
-$ pnpm run dev
+# View logs
+docker-compose logs -f
 
-# npm run dev
-# yarn run dev
+# Check status
+docker-compose ps
 ```
 
-> We've already implemented some recommended configurations in `.eslintrc`, `.eslintignore` and `.prettierrc`. Feel free to edit them if you have your own preferences.
+The backend will be available at `http://localhost:3000`
 
-## Related Efforts
+### 3. Initialize Database
 
-- [Vite](https://github.com/vitejs/vite)
-- [Tailwind CSS](https://github.com/tailwindlabs/tailwindcss)
-- [Framer Motion](https://github.com/framer/motion)
+```bash
+# Run database initialization (creates tables and default users)
+docker-compose exec backend npm run init-db
+```
 
-## Related Docs
+**Default Credentials:**
 
-- [Vite](https://vitejs.dev/guide/)
-- [Tailwind CSS](https://tailwindcss.com/docs/installation)
-- [Framer Motion](https://www.framer.com/motion/)
+- Admin: `username: admin, password: admin123`
+- Employees:
+  - `username: hengi, password: password123` (HENGI)
+  - `username: marleni, password: password123` (MARLENI)
+  - `username: israel, password: password123` (ISRAEL)
+  - `username: thaicar, password: password123` (THAICAR)
 
-## Contributing
+### 4. Setup Frontend
 
-Feel free to dive in! [Open an issue](https://github.com/matozz/vite-react-framer-starter) or submit PRs.
+```bash
+cd frontend
 
-## License
+# Install dependencies
+npm install
 
-[MIT](LICENSE) © Matoz
-# guruweb
+# Start development server
+npm run dev
+```
+
+The frontend will be available at `http://localhost:5173`
+
+## 🔌 API Endpoints
+
+### Authentication
+
+**POST** `/api/auth/login`
+
+```json
+{
+  "username": "admin",
+  "password": "admin123"
+}
+```
+
+Response:
+
+```json
+{
+  "token": "jwt_token_here",
+  "user": {
+    "id": 1,
+    "username": "admin",
+    "role": "admin",
+    "dataColumn": null
+  }
+}
+```
+
+**GET** `/api/auth/me` (requires auth)
+
+### Services
+
+**GET** `/api/services` (requires auth)
+
+- Query params: `startDate`, `endDate`
+- Returns: Array of services (filtered by role)
+
+**POST** `/api/services` (admin only)
+
+```json
+{
+  "username": "HENGI",
+  "serviceName": "Traducción",
+  "client": "Cliente A",
+  "time": "10:00 AM",
+  "earnings": 500.0,
+  "date": "2025-01-15"
+}
+```
+
+**GET** `/api/services/stats/user/:userId?` (requires auth)
+
+- Returns: User statistics
+
+**GET** `/api/services/stats/admin` (admin only)
+
+- Returns: All users stats + admin total
+
+**DELETE** `/api/services/:id` (requires auth)
+
+## 🔧 Frontend Integration
+
+### 1. Install Axios
+
+```bash
+cd frontend
+npm install axios
+```
+
+### 2. Create API Service
+
+Create `frontend/src/services/api.ts`:
+
+```typescript
+import axios from "axios";
+
+const API_URL = "http://localhost:3000/api";
+
+const api = axios.create({
+  baseURL: API_URL,
+});
+
+// Add token to requests
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+export const authAPI = {
+  login: (username: string, password: string) =>
+    api.post("/auth/login", { username, password }),
+  getCurrentUser: () => api.get("/auth/me"),
+};
+
+export const servicesAPI = {
+  getServices: (startDate?: string, endDate?: string) =>
+    api.get("/services", { params: { startDate, endDate } }),
+  createService: (data: any) => api.post("/services", data),
+  getUserStats: (userId?: number) =>
+    api.get(`/services/stats/user/${userId || ""}`),
+  getAdminStats: () => api.get("/services/stats/admin"),
+  deleteService: (id: number) => api.delete(`/services/${id}`),
+};
+
+export default api;
+```
+
+### 3. Update AuthContext
+
+Replace your mock authentication with real API calls:
+
+```typescript
+import { authAPI } from "../services/api";
+
+const login = async (username: string, password: string) => {
+  const response = await authAPI.login(username, password);
+  const { token, user } = response.data;
+
+  localStorage.setItem("token", token);
+  setUser(user);
+  // navigate to dashboard
+};
+```
+
+### 4. Update Data Fetching
+
+In your dashboard components, replace prop data with API calls:
+
+```typescript
+import { servicesAPI } from "../services/api";
+
+useEffect(() => {
+  const fetchData = async () => {
+    const response = await servicesAPI.getServices();
+    setData(response.data);
+  };
+  fetchData();
+}, []);
+```
+
+### 5. Update DataModificationForm
+
+```typescript
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+
+  await servicesAPI.createService({
+    username: selectedUser,
+    serviceName,
+    client,
+    time,
+    earnings: parseFloat(earnings),
+  });
+
+  // Refresh data
+  onServiceAdded();
+};
+```
+
+## 🗄️ Database Schema
+
+### users
+
+- `id` (SERIAL PRIMARY KEY)
+- `username` (VARCHAR UNIQUE)
+- `password_hash` (VARCHAR)
+- `role` (VARCHAR: 'admin' | 'employee')
+- `data_column` (VARCHAR: 'HENGI' | 'MARLENI' | 'ISRAEL' | 'THAICAR')
+- `created_at` (TIMESTAMP)
+
+### services
+
+- `id` (SERIAL PRIMARY KEY)
+- `user_id` (INTEGER REFERENCES users)
+- `service_name` (VARCHAR)
+- `client` (VARCHAR)
+- `time` (VARCHAR)
+- `earnings` (DECIMAL)
+- `date` (DATE)
+- `created_at` (TIMESTAMP)
+
+## 🛠️ Development
+
+### Backend Only
+
+```bash
+cd backend
+npm install
+npm run dev
+```
+
+### Frontend Only
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+### View Database
+
+```bash
+# Connect to PostgreSQL
+docker-compose exec db psql -U admin -d guruweb
+
+# Useful queries
+\dt                    # List tables
+SELECT * FROM users;   # View users
+SELECT * FROM services; # View services
+\q                     # Quit
+```
+
+## 📦 Production Deployment
+
+### Using Docker
+
+```bash
+# Build production images
+docker-compose -f docker-compose.prod.yml up -d
+
+# Or push to your server
+git push
+ssh your-server
+cd guruweb
+docker-compose up -d
+```
+
+### Environment Variables
+
+Update `.env` with production values:
+
+```env
+DB_PASSWORD=strong_random_password
+JWT_SECRET=very_strong_random_secret
+NODE_ENV=production
+FRONTEND_URL=https://yourdomain.com
+```
+
+## 🔒 Security Notes
+
+- Change all default passwords in production
+- Use strong JWT secrets
+- Enable HTTPS (add Traefik/Nginx)
+- Set proper CORS origins
+- Regularly backup the database
+
+## 🐛 Troubleshooting
+
+**Database connection issues:**
+
+```bash
+docker-compose logs db
+docker-compose restart db
+```
+
+**Backend not starting:**
+
+```bash
+docker-compose logs backend
+docker-compose exec backend npm install
+```
+
+**Port conflicts:**
+
+```bash
+# Change ports in docker-compose.yml
+ports:
+  - "3001:3000"  # Use 3001 instead of 3000
+```
+
+## 📝 TODO
+
+- [ ] Add data validation
+- [ ] Implement pagination
+- [ ] Add export to Excel feature
+- [ ] Email notifications
+- [ ] Backup automation
+- [ ] Add tests
+
+## 👨‍💻 Author
+
+JAOCruz - Premium Website Builder & Software Developer
+
+## 📄 License
+
+Private Project
