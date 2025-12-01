@@ -242,9 +242,9 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
           </div>
         </header>
 
-        {/* Page Content - Scrollable area */}
-        <main className="flex-1 overflow-y-auto bg-gray-800/90 p-6 backdrop-blur-sm">
-          <div className="mx-auto max-w-full">{children}</div>
+        {/* Page Content - Scrollable area - FIX: Solo un overflow aquí */}
+        <main className="flex-1 overflow-y-auto bg-gray-800/90 backdrop-blur-sm">
+          <div className="mx-auto max-w-full p-6">{children}</div>
         </main>
       </div>
     </div>

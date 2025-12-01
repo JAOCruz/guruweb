@@ -13,7 +13,7 @@ import Footer from "../src/components/Footer";
 function App() {
   return (
     <div
-      className="relative min-h-screen overflow-x-hidden"
+      className="relative overflow-x-hidden"
       style={{
         backgroundImage: `
           linear-gradient(to bottom, 

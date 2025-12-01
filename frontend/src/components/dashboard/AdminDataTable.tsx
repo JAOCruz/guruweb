@@ -62,7 +62,6 @@ const AdminDataTable: React.FC<AdminDataTableProps> = ({
           candidate.DETALLE === "SERVICIO" &&
           candidate[user]
         ) {
-          // Ensure we return a number
           const id = candidate.id;
           return typeof id === "number" ? id : parseInt(String(id), 10);
         }
@@ -86,7 +85,6 @@ const AdminDataTable: React.FC<AdminDataTableProps> = ({
         const clientValue = findDetailValue(index, "CLIENTE", user);
         const timeValue = findDetailValue(index, "HORA", user);
 
-        // Ensure serviceId is a number
         let serviceId: number | undefined = undefined;
         if (row.id) {
           serviceId =
@@ -108,7 +106,6 @@ const AdminDataTable: React.FC<AdminDataTableProps> = ({
     return groupedData;
   };
 
-  // Calculate totals for each user
   const calculateUserTotals = (groupedData: GroupedUserData) => {
     const totals = {} as Record<
       WorkerKey,
@@ -131,7 +128,6 @@ const AdminDataTable: React.FC<AdminDataTableProps> = ({
     return totals;
   };
 
-  // Calculate admin's total earnings (50% from all users)
   const calculateAdminTotal = (
     userTotals: Record<
       WorkerKey,
@@ -179,7 +175,7 @@ const AdminDataTable: React.FC<AdminDataTableProps> = ({
   };
 
   return (
-    <div className="space-y-6 pb-10">
+    <div className="space-y-6">
       {/* User selector tabs */}
       <div className="flex flex-wrap border-b border-blue-900/30">
         <button
@@ -269,14 +265,15 @@ const AdminDataTable: React.FC<AdminDataTableProps> = ({
         (user: WorkerKey) => (
           <div
             key={user}
-            className="overflow-hidden rounded-2xl border border-blue-900/30 bg-gray-900/70 shadow-lg backdrop-blur-md"
+            className="rounded-2xl border border-blue-900/30 bg-gray-900/70 shadow-lg backdrop-blur-md"
           >
             <div className="border-b border-blue-900/30 bg-gray-950/80 px-6 py-4">
               <h3 className="metallic-3d-text text-2xl font-semibold tracking-[0.25em] uppercase">
                 {user}
               </h3>
             </div>
-            <div className="overflow-x-auto">
+            {/* FIX: Removido overflow-x-auto y overflow-hidden */}
+            <div>
               <table className="min-w-full divide-y divide-gray-800 text-base">
                 <thead className="bg-gray-950/70">
                   <tr>

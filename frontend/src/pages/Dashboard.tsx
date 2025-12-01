@@ -5,6 +5,7 @@ import AdminDataTable from "../components/dashboard/AdminDataTable";
 import EmployeeDataTable from "../components/dashboard/EmployeeDataTable";
 import DataModificationForm from "../components/dashboard/DataModificationForm";
 import DataCharts from "../components/dashboard/DataCharts";
+import FlipbooksSection from "../components/dashboard/FlipbooksSection"; // ← NUEVO IMPORT
 import { servicesAPI } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 
@@ -67,7 +68,7 @@ const Dashboard: React.FC = () => {
         const service = userServices[i];
         if (service) {
           serviceRow[user] = service.service_name;
-          serviceRow.id = service.id; // Add service ID
+          serviceRow.id = service.id;
           clientRow[user] = service.client || "";
           timeRow[user] = service.time || "";
           earningsRow[user] = service.earnings;
@@ -103,16 +104,22 @@ const Dashboard: React.FC = () => {
         <Route
           path="/"
           element={
-            <div className="space-y-6">
+            <div className="space-y-8">
               {isAdmin && <DataModificationForm onServiceAdded={fetchData} />}
               {isAdmin ? (
                 <AdminDataTable
                   data={transformToExcelFormat()}
                   onSort={() => {}}
-                  onServiceDeleted={fetchData} // Add this
+                  onServiceDeleted={fetchData}
                 />
               ) : (
-                <EmployeeDataTable services={getEmployeeServices()} />
+                <>
+                  {/* Tabla del empleado */}
+                  <EmployeeDataTable services={getEmployeeServices()} />
+
+                  {/* Sección de Flipbooks - NUEVO */}
+                  <FlipbooksSection />
+                </>
               )}
             </div>
           }
@@ -124,10 +131,14 @@ const Dashboard: React.FC = () => {
               <AdminDataTable
                 data={transformToExcelFormat()}
                 onSort={() => {}}
-                onServiceDeleted={fetchData} // Add this
+                onServiceDeleted={fetchData}
               />
             ) : (
-              <EmployeeDataTable services={services} />
+              <div className="space-y-8">
+                <EmployeeDataTable services={services} />
+                {/* Flipbooks también en la vista de datos */}
+                <FlipbooksSection />
+              </div>
             )
           }
         />
