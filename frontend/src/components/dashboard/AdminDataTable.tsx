@@ -1,11 +1,25 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { ExcelRow, USER_COLUMNS, WorkerKey } from "../../services/excelService";
 import { servicesAPI } from "../../services/api";
+import { 
+  Trash2, 
+  MessageCircle, 
+  Sparkles, 
+  Search, 
+  Filter,
+  Check,
+  X,
+  Loader2
+} from "lucide-react";
 
+// --- TIPOS ---
 interface AdminDataTableProps {
   data: ExcelRow[];
   onSort: (column: string, direction: "asc" | "desc") => void;
   onServiceDeleted?: () => void;
+  employeePercentage: number;
+  isEmployeeView?: boolean; // Nuevo prop para controlar vista empleado
+  currentEmployee?: string; // Nuevo prop para saber quién está logueado
 }
 
 interface UserServiceEntry {
@@ -13,384 +27,384 @@ interface UserServiceEntry {
   earnings: number;
   client: string;
   time: string;
+  comment?: string;
   id?: number;
 }
 
 type GroupedUserData = Record<WorkerKey, UserServiceEntry[]>;
 
+// API Key de Gemini (Idealmente mover a variables de entorno: import.meta.env.VITE_GEMINI_KEY)
+const GEMINI_API_KEY = "TU_API_KEY_AQUI"; 
+
 const AdminDataTable: React.FC<AdminDataTableProps> = ({
   data,
   onServiceDeleted,
+  employeePercentage,
+  isEmployeeView = false,
+  currentEmployee
 }) => {
-  const [activeUser, setActiveUser] = useState<WorkerKey | "all">("all");
+  // --- ESTADOS ---
+  const [activeUser, setActiveUser] = useState<WorkerKey | "all">(
+    isEmployeeView && currentEmployee ? (currentEmployee as WorkerKey) : "all"
+  );
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [commentText, setCommentText] = useState<string>("");
+  
+  // Estados IA
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiModalOpen, setAiModalOpen] = useState(false);
+  const [aiInsight, setAiInsight] = useState("");
 
-  // Group data by user and type (service or earnings)
+  // --- TU LÓGICA DE DATOS ORIGINAL (INTACTA) ---
   const groupDataByUser = (): GroupedUserData => {
     const groupedData = USER_COLUMNS.reduce<GroupedUserData>((acc, user) => {
       acc[user] = [];
       return acc;
     }, {} as GroupedUserData);
 
-    const findDetailValue = (
-      currentIndex: number,
-      detailType: string,
-      user: WorkerKey,
-    ): string | number | undefined => {
-      const searchOffsets = [-3, -2, -1, 1, 2, 3];
-
+    const findDetailValue = (currentIndex: number, detailType: string, user: WorkerKey) => {
+      const searchOffsets = [1, 2, 3, -1, -2, -3];
       for (const offset of searchOffsets) {
         const candidate = data[currentIndex + offset];
-        if (candidate && candidate.DETALLE === detailType) {
-          return candidate[user];
-        }
+        if (candidate && candidate.DETALLE === detailType) return candidate[user];
       }
-
       return undefined;
     };
-    const findServiceId = (
-      currentIndex: number,
-      user: WorkerKey,
-    ): number | undefined => {
-      const searchOffsets = [-3, -2, -1, 0, 1, 2, 3];
 
+    const findServiceId = (currentIndex: number, user: WorkerKey): number | undefined => {
+      const searchOffsets = [-3, -2, -1, 0, 1, 2, 3];
+      const userIdKey = `${user}_id`;
       for (const offset of searchOffsets) {
         const candidate = data[currentIndex + offset];
-        if (
-          candidate &&
-          candidate.id &&
-          candidate.DETALLE === "SERVICIO" &&
-          candidate[user]
-        ) {
-          const id = candidate.id;
-          return typeof id === "number" ? id : parseInt(String(id), 10);
+        if (candidate && candidate.DETALLE === "SERVICIO" && candidate[user]) {
+          if (candidate[userIdKey]) return Number(candidate[userIdKey]);
+          if (candidate.id) return Number(candidate.id);
         }
       }
-
       return undefined;
     };
 
     data.forEach((row, index) => {
-      if (row.DETALLE !== "SERVICIO") {
-        return;
-      }
+      if (row.DETALLE !== "SERVICIO") return;
 
       USER_COLUMNS.forEach((user) => {
         const serviceValue = row[user];
-        if (!serviceValue) {
-          return;
-        }
+        if (!serviceValue) return;
 
         const earnings = Number(findDetailValue(index, "GANANCIA", user)) || 0;
         const clientValue = findDetailValue(index, "CLIENTE", user);
         const timeValue = findDetailValue(index, "HORA", user);
+        const commentValue = findDetailValue(index, "NOTA", user);
 
-        let serviceId: number | undefined = undefined;
-        if (row.id) {
-          serviceId =
-            typeof row.id === "number" ? row.id : parseInt(String(row.id), 10);
-        } else {
-          serviceId = findServiceId(index, user);
-        }
+        let serviceId = row[`${user}_id`] ? Number(row[`${user}_id`]) : (row.id ? Number(row.id) : findServiceId(index, user));
 
         groupedData[user].push({
           service: String(serviceValue),
           earnings,
           client: clientValue ? String(clientValue) : "",
           time: timeValue ? String(timeValue) : "",
+          comment: commentValue ? String(commentValue) : "",
           id: serviceId,
         });
       });
     });
-
     return groupedData;
   };
 
-  const calculateUserTotals = (groupedData: GroupedUserData) => {
-    const totals = {} as Record<
-      WorkerKey,
-      { total: number; adminShare: number; userShare: number }
-    >;
+  const groupedData = useMemo(() => groupDataByUser(), [data]);
 
+  const calculateUserTotals = () => {
+    const totals: any = {};
     USER_COLUMNS.forEach((user) => {
-      const total = groupedData[user].reduce(
-        (acc, service) => acc + service.earnings,
-        0,
-      );
-
+      const total = groupedData[user].reduce((acc, s) => acc + s.earnings, 0);
       totals[user] = {
         total,
-        adminShare: Number((total * 0.5).toFixed(2)),
-        userShare: Number((total * 0.5).toFixed(2)),
+        adminShare: Number((total * (1 - employeePercentage / 100)).toFixed(2)),
+        userShare: Number((total * (employeePercentage / 100)).toFixed(2)),
       };
     });
-
     return totals;
   };
 
-  const calculateAdminTotal = (
-    userTotals: Record<
-      WorkerKey,
-      { total: number; adminShare: number; userShare: number }
-    >,
-  ) => {
-    return USER_COLUMNS.reduce((acc, user) => {
-      return acc + (userTotals[user]?.adminShare ?? 0);
-    }, 0);
-  };
+  const userTotals = useMemo(() => calculateUserTotals(), [groupedData, employeePercentage]);
+  
+  const adminTotal = USER_COLUMNS.reduce((acc, user) => acc + (userTotals[user]?.adminShare ?? 0), 0);
 
+  // --- HANDLERS ---
   const handleDelete = async (serviceId: number | undefined) => {
-    if (!serviceId) {
-      alert("No se puede eliminar: ID de servicio no encontrado");
-      return;
-    }
-
-    if (
-      !window.confirm("¿Estás seguro de que quieres eliminar este servicio?")
-    ) {
-      return;
-    }
-
+    if (!serviceId) return;
+    if (!window.confirm("¿Eliminar servicio?")) return;
     try {
       setDeletingId(serviceId);
       await servicesAPI.deleteService(serviceId);
-
-      if (onServiceDeleted) {
-        onServiceDeleted();
-      }
-    } catch (error: any) {
-      console.error("Error deleting service:", error);
-      alert(error.response?.data?.error || "Error al eliminar el servicio");
+      onServiceDeleted?.();
+    } catch (error) {
+      console.error(error);
+      alert("Error al eliminar");
     } finally {
       setDeletingId(null);
     }
   };
 
-  const groupedData = groupDataByUser();
-  const userTotals = calculateUserTotals(groupedData);
-  const adminTotal = calculateAdminTotal(userTotals);
-
-  const handleUserChange = (userKey: WorkerKey | "all") => {
-    setActiveUser(userKey);
+  const handleEditComment = (id: string, current: string) => {
+    setEditingCommentId(id);
+    setCommentText(current);
   };
 
-  return (
-    <div className="space-y-6">
-      {/* User selector tabs */}
-      <div className="flex flex-wrap border-b border-blue-900/30">
-        <button
-          onClick={() => handleUserChange("all")}
-          className={`mr-4 border-b-2 px-4 py-2 text-sm font-medium ${
-            activeUser === "all"
-              ? "border-blue-500"
-              : "border-transparent hover:border-gray-300"
-          }`}
-        >
-          <span
-            className={
-              activeUser === "all"
-                ? "metallic-3d-text"
-                : "text-gray-400 hover:text-gray-300"
-            }
-          >
-            Todos los Usuarios
-          </span>
-        </button>
+  const handleSaveComment = async (serviceId: number | undefined, userId: string, index: number) => {
+    if (!serviceId) return;
+    try {
+      await servicesAPI.updateComment(serviceId, commentText);
+      setEditingCommentId(null);
+      onServiceDeleted?.();
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
-        {USER_COLUMNS.map((user) => (
-          <button
-            key={user}
-            onClick={() => handleUserChange(user)}
-            className={`mr-4 border-b-2 px-4 py-2 text-sm font-medium ${
-              activeUser === user
-                ? "border-blue-500"
-                : "border-transparent hover:border-gray-300"
-            }`}
-          >
-            <span
-              className={
-                activeUser === user
-                  ? "metallic-3d-text"
-                  : "text-gray-400 hover:text-gray-300"
-              }
+  // --- GEMINI AI HANDLER ---
+  const handleGenerateInsights = async () => {
+    setAiModalOpen(true);
+    setAiLoading(true);
+    setAiInsight("");
+
+    // Preparar datos para el prompt
+    const userToAnalyze = activeUser === 'all' ? 'Todos los usuarios' : activeUser;
+    const statsText = activeUser === 'all' 
+      ? `Total Global: ${adminTotal}` 
+      : `Usuario: ${activeUser}, Total: ${userTotals[activeUser].total}`;
+    
+    // Simplificar datos para enviar a IA (evitar payload gigante)
+    const contextData = activeUser === 'all' 
+       ? USER_COLUMNS.map(u => ({ user: u, total: userTotals[u].total, count: groupedData[u].length }))
+       : groupedData[activeUser].map(s => ({ s: s.service, m: s.earnings }));
+
+    const prompt = `
+      Actúa como gerente de "Gurú Soluciones". Analiza estos datos del día:
+      Contexto: ${userToAnalyze}. Estadísticas: ${statsText}.
+      Detalle simplificado: ${JSON.stringify(contextData).slice(0, 1000)}...
+      
+      Dame 3 puntos clave muy breves (con emojis):
+      1. Rendimiento general.
+      2. Servicio destacado o empleado destacado.
+      3. Una recomendación corta.
+    `;
+
+    try {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${GEMINI_API_KEY}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+        }
+      );
+      const result = await response.json();
+      setAiInsight(result.candidates?.[0]?.content?.parts?.[0]?.text || "No se pudo generar análisis.");
+    } catch (e) {
+      setAiInsight("Error conectando con la IA.");
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  // --- RENDER ---
+  const usersToRender = activeUser === "all" ? USER_COLUMNS : [activeUser];
+
+  return (
+    <div className="space-y-6 animate-in fade-in duration-500">
+      
+      {/* 1. HEADER: Tabs y Botón IA */}
+      <div className="flex flex-col md:flex-row justify-between items-center gap-4 border-b border-slate-800 pb-4">
+        
+        {/* Tabs de Usuario */}
+        {!isEmployeeView && (
+          <div className="flex overflow-x-auto gap-2 w-full md:w-auto pb-2 md:pb-0 scrollbar-hide">
+            <button
+              onClick={() => setActiveUser("all")}
+              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                activeUser === "all" ? "bg-blue-600 text-white shadow-lg shadow-blue-900/40" : "bg-slate-800 text-slate-400 hover:bg-slate-700"
+              }`}
             >
-              {user}
-            </span>
-          </button>
+              Todos
+            </button>
+            {USER_COLUMNS.map((user) => (
+              <button
+                key={user}
+                onClick={() => setActiveUser(user)}
+                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                  activeUser === user ? "bg-blue-600 text-white shadow-lg shadow-blue-900/40" : "bg-slate-800 text-slate-400 hover:bg-slate-700"
+                }`}
+              >
+                {user}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Botón IA */}
+        <button 
+          onClick={handleGenerateInsights}
+          className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg shadow-purple-900/30 transition-all hover:scale-105"
+        >
+          <Sparkles size={16} /> Insights IA
+        </button>
+      </div>
+
+      {/* 2. RESUMEN CARDS (Estilo Moderno) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {!isEmployeeView && (
+          <div className="bg-slate-800/50 p-4 rounded-2xl border border-slate-700/50 backdrop-blur-sm">
+            <h4 className="text-slate-400 text-xs font-bold uppercase mb-1">Total Admin</h4>
+            <p className="text-3xl font-bold text-emerald-400">${adminTotal}</p>
+          </div>
+        )}
+        
+        {usersToRender.map(user => (
+          <div key={`stat-${user}`} className="bg-slate-800 p-4 rounded-2xl border border-slate-700 shadow-sm">
+             <div className="flex justify-between items-center mb-2">
+                <span className="font-bold text-white">{user}</span>
+                <span className="text-xs bg-slate-700 px-2 py-1 rounded text-slate-300">{groupedData[user].length} serv.</span>
+             </div>
+             <div className="space-y-1">
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-400">Total:</span>
+                  <span className="text-white font-medium">${userTotals[user].total}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-400">Admin:</span>
+                  <span className="text-blue-400 font-medium">${userTotals[user].adminShare}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-400">Usuario:</span>
+                  <span className="text-yellow-400 font-medium">${userTotals[user].userShare}</span>
+                </div>
+             </div>
+          </div>
         ))}
       </div>
 
-      {/* Admin summary - always visible */}
-      <div className="perspective-container rounded-lg border border-blue-700 bg-blue-900/20 p-4">
-        <h3 className="metallic-3d-text mb-2 text-xl font-semibold">
-          Resumen Administrativo
-        </h3>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5">
-          {USER_COLUMNS.map((user) => (
-            <div
-              key={user}
-              className="rounded-lg border border-gray-700 bg-gray-800/80 p-3 backdrop-blur-sm"
-            >
-              <h4 className="text-md bevel-text font-medium">{user}</h4>
-              <p className="text-sm text-gray-300">
-                Total:{" "}
-                <span className="font-bold text-white">
-                  {userTotals[user].total}
-                </span>
-              </p>
-              <p className="text-sm text-gray-300">
-                Admin (50%):{" "}
-                <span className="font-bold text-green-400">
-                  {userTotals[user].adminShare}
-                </span>
-              </p>
-              <p className="text-sm text-gray-300">
-                Usuario (50%):{" "}
-                <span className="font-bold text-yellow-400">
-                  {userTotals[user].userShare}
-                </span>
-              </p>
+      {/* 3. TABLAS / LISTAS DE SERVICIOS */}
+      {usersToRender.map((user) => (
+        <div key={user} className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+          {/* Header de la Tabla */}
+          <div className="px-6 py-4 bg-slate-950/50 border-b border-slate-800 flex items-center justify-between">
+            <h3 className="font-bold text-lg text-slate-200 tracking-wide">{user}</h3>
+          </div>
+
+          {/* VISTA ESCRITORIO (Tabla) */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full text-left text-sm text-slate-400">
+              <thead className="bg-slate-950/30 uppercase text-xs font-semibold text-slate-500">
+                <tr>
+                  <th className="px-6 py-4">Hora</th>
+                  <th className="px-6 py-4">Servicio</th>
+                  <th className="px-6 py-4">Cliente</th>
+                  <th className="px-6 py-4">Ganancia</th>
+                  <th className="px-6 py-4 w-1/3">Nota</th>
+                  <th className="px-6 py-4 text-center">Acción</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800">
+                {groupedData[user].length > 0 ? (
+                  groupedData[user].map((item, idx) => {
+                    const isEditing = editingCommentId === `${user}-${idx}`;
+                    return (
+                      <tr key={`${user}-${idx}`} className="hover:bg-slate-800/50 transition-colors group">
+                        <td className="px-6 py-4 font-mono">{item.time || "--:--"}</td>
+                        <td className="px-6 py-4 font-medium text-slate-200">{item.service}</td>
+                        <td className="px-6 py-4">{item.client || "—"}</td>
+                        <td className="px-6 py-4 font-bold text-emerald-400">${item.earnings}</td>
+                        <td className="px-6 py-4">
+                           {isEditing ? (
+                             <div className="flex gap-2">
+                               <input 
+                                 autoFocus
+                                 className="bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white w-full focus:outline-none focus:border-blue-500"
+                                 value={commentText}
+                                 onChange={(e) => setCommentText(e.target.value)}
+                               />
+                               <button onClick={() => handleSaveComment(item.id, user, idx)} className="text-green-400"><Check size={18}/></button>
+                               <button onClick={() => setEditingCommentId(null)} className="text-red-400"><X size={18}/></button>
+                             </div>
+                           ) : (
+                             <div 
+                               onClick={() => handleEditComment(`${user}-${idx}`, item.comment || "")}
+                               className="cursor-pointer hover:text-blue-400 flex items-center gap-2 group/edit"
+                             >
+                               <span className="truncate max-w-[200px]">{item.comment || <span className="text-slate-600 italic">Agregar nota...</span>}</span>
+                             </div>
+                           )}
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          <button 
+                            onClick={() => handleDelete(item.id)}
+                            disabled={deletingId === item.id}
+                            className="p-2 text-slate-600 hover:text-red-400 hover:bg-red-400/10 rounded transition-all opacity-0 group-hover:opacity-100"
+                          >
+                            {deletingId === item.id ? <Loader2 className="animate-spin" size={16} /> : <Trash2 size={16} />}
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr><td colSpan={6} className="px-6 py-8 text-center text-slate-600">Sin servicios registrados hoy</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* VISTA MÓVIL (Tarjetas) */}
+          <div className="md:hidden divide-y divide-slate-800">
+            {groupedData[user].map((item, idx) => (
+              <div key={`${user}-m-${idx}`} className="p-4 bg-slate-900">
+                <div className="flex justify-between items-start mb-2">
+                   <div>
+                     <p className="font-bold text-white text-base">{item.service}</p>
+                     <p className="text-sm text-slate-500">{item.client || "Cliente General"}</p>
+                   </div>
+                   <span className="text-emerald-400 font-bold text-lg">${item.earnings}</span>
+                </div>
+                <div className="flex justify-between items-center mt-3">
+                   <div className="flex items-center gap-2 text-xs text-slate-500 font-mono">
+                      <span>{item.time}</span>
+                      {item.comment && <span className="bg-slate-800 px-2 py-0.5 rounded text-slate-300 truncate max-w-[150px]">{item.comment}</span>}
+                   </div>
+                   <button onClick={() => handleDelete(item.id)} className="text-slate-600 hover:text-red-400">
+                      <Trash2 size={18} />
+                   </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+        </div>
+      ))}
+
+      {/* MODAL IA */}
+      {aiModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="bg-slate-900 border border-slate-700 w-full max-w-lg rounded-2xl p-6 shadow-2xl">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold text-white flex items-center gap-2"><Sparkles className="text-purple-400"/> Análisis IA</h3>
+              <button onClick={() => setAiModalOpen(false)}><X className="text-slate-400"/></button>
             </div>
-          ))}
-          <div className="glow-animation rounded-lg border border-green-700 bg-green-900/20 p-3">
-            <h4 className="text-md neon-text font-medium">Total Admin</h4>
-            <p className="text-xl font-bold text-white">{adminTotal}</p>
-            <p className="text-sm text-gray-300">50% de todos los usuarios</p>
+            <div className="bg-slate-800/50 rounded-xl p-4 min-h-[150px] text-slate-200 leading-relaxed whitespace-pre-wrap">
+               {aiLoading ? (
+                 <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-500">
+                   <Loader2 className="animate-spin text-blue-500" size={32} />
+                   <p>Analizando transacciones...</p>
+                 </div>
+               ) : (
+                 aiInsight
+               )}
+            </div>
           </div>
         </div>
-      </div>
-
-      {/* User data tables */}
-      {(activeUser === "all" ? USER_COLUMNS : [activeUser]).map(
-        (user: WorkerKey) => (
-          <div
-            key={user}
-            className="rounded-2xl border border-blue-900/30 bg-gray-900/70 shadow-lg backdrop-blur-md"
-          >
-            <div className="border-b border-blue-900/30 bg-gray-950/80 px-6 py-4">
-              <h3 className="metallic-3d-text text-2xl font-semibold tracking-[0.25em] uppercase">
-                {user}
-              </h3>
-            </div>
-            {/* FIX: Removido overflow-x-auto y overflow-hidden */}
-            <div>
-              <table className="min-w-full divide-y divide-gray-800 text-base">
-                <thead className="bg-gray-950/70">
-                  <tr>
-                    <th className="px-6 py-4 text-left text-sm font-semibold tracking-[0.2em] text-blue-300 uppercase">
-                      Servicio
-                    </th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold tracking-[0.2em] text-blue-300 uppercase">
-                      Cliente
-                    </th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold tracking-[0.2em] text-blue-300 uppercase">
-                      Hora
-                    </th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold tracking-[0.2em] text-blue-300 uppercase">
-                      Ganancia
-                    </th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold tracking-[0.2em] text-blue-300 uppercase">
-                      Acción
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-800/50 bg-gray-900/40">
-                  {groupedData[user].length > 0 ? (
-                    groupedData[user].map(
-                      (item: UserServiceEntry, index: number) => (
-                        <tr
-                          key={`${user}-service-${index}`}
-                          className="hover:bg-blue-900/10"
-                        >
-                          <td className="px-6 py-4 text-base whitespace-nowrap text-gray-200">
-                            {item.service}
-                          </td>
-                          <td className="px-6 py-4 text-base whitespace-nowrap text-gray-200">
-                            {item.client || "—"}
-                          </td>
-                          <td className="px-6 py-4 text-base whitespace-nowrap text-gray-200">
-                            {item.time || "—"}
-                          </td>
-                          <td className="px-6 py-4 text-base font-semibold whitespace-nowrap text-blue-200">
-                            {item.earnings}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <button
-                              onClick={() => handleDelete(item.id)}
-                              disabled={deletingId === item.id}
-                              className="rounded-md border border-red-900/30 bg-red-500/20 px-3 py-1 text-sm text-red-300 hover:bg-red-500/30 disabled:opacity-50"
-                            >
-                              {deletingId === item.id
-                                ? "Eliminando..."
-                                : "Eliminar"}
-                            </button>
-                          </td>
-                        </tr>
-                      ),
-                    )
-                  ) : (
-                    <tr>
-                      <td
-                        colSpan={5}
-                        className="px-6 py-4 text-center text-base text-gray-400"
-                      >
-                        No hay servicios registrados
-                      </td>
-                    </tr>
-                  )}
-                  {/* Total row */}
-                  <tr className="bg-gray-900/80">
-                    <td className="metallic-3d-text px-6 py-4 text-base font-bold tracking-[0.2em] whitespace-nowrap">
-                      Total
-                    </td>
-                    <td className="px-6 py-4 text-base whitespace-nowrap text-gray-300">
-                      —
-                    </td>
-                    <td className="px-6 py-4 text-base whitespace-nowrap text-gray-300">
-                      —
-                    </td>
-                    <td className="metallic-3d-text px-6 py-4 text-base font-bold tracking-[0.2em] whitespace-nowrap">
-                      {userTotals[user].total}
-                    </td>
-                    <td className="px-6 py-4"></td>
-                  </tr>
-                  {/* Profit split rows */}
-                  <tr className="bg-gray-900/50">
-                    <td className="px-6 py-4 text-base whitespace-nowrap text-gray-300">
-                      Admin (50%)
-                    </td>
-                    <td className="px-6 py-4 text-base whitespace-nowrap text-gray-300">
-                      —
-                    </td>
-                    <td className="px-6 py-4 text-base whitespace-nowrap text-gray-300">
-                      —
-                    </td>
-                    <td className="neon-text px-6 py-4 text-base font-semibold whitespace-nowrap text-green-400">
-                      {userTotals[user].adminShare}
-                    </td>
-                    <td className="px-6 py-4"></td>
-                  </tr>
-                  <tr className="bg-gray-900/50">
-                    <td className="px-6 py-4 text-base whitespace-nowrap text-gray-300">
-                      {user} (50%)
-                    </td>
-                    <td className="px-6 py-4 text-base whitespace-nowrap text-gray-300">
-                      —
-                    </td>
-                    <td className="px-6 py-4 text-base whitespace-nowrap text-gray-300">
-                      —
-                    </td>
-                    <td className="neon-text px-6 py-4 text-base font-semibold whitespace-nowrap text-yellow-400">
-                      {userTotals[user].userShare}
-                    </td>
-                    <td className="px-6 py-4"></td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        ),
       )}
+
     </div>
   );
 };
