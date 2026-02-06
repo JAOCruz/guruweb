@@ -1,12 +1,19 @@
-const pool = require('../config/database');
+const pool = require("../config/database");
 
 class Service {
-  static async create(userId, serviceName, client, time, earnings, date = null) {
+  static async create(
+    userId,
+    serviceName,
+    client,
+    time,
+    earnings,
+    date = null,
+  ) {
     const result = await pool.query(
       `INSERT INTO services (user_id, service_name, client, time, earnings, date) 
        VALUES ($1, $2, $3, $4, $5, $6) 
        RETURNING *`,
-      [userId, serviceName, client, time, earnings, date || new Date()]
+      [userId, serviceName, client, time, earnings, date || new Date()],
     );
     return result.rows[0];
   }
@@ -30,7 +37,7 @@ class Service {
       query += ` AND s.date <= $${params.length}`;
     }
 
-    query += ' ORDER BY s.date DESC, s.created_at DESC';
+    query += " ORDER BY s.date DESC, s.created_at DESC";
 
     const result = await pool.query(query, params);
     return result.rows;
@@ -55,7 +62,7 @@ class Service {
       query += ` AND s.date <= $${params.length}`;
     }
 
-    query += ' ORDER BY s.date DESC, s.created_at DESC';
+    query += " ORDER BY s.date DESC, s.created_at DESC";
 
     const result = await pool.query(query, params);
     return result.rows;
@@ -70,7 +77,7 @@ class Service {
         SUM(earnings) * 0.5 as admin_share
        FROM services 
        WHERE user_id = $1`,
-      [userId]
+      [userId],
     );
     return result.rows[0];
   }
@@ -89,7 +96,7 @@ class Service {
        LEFT JOIN services s ON u.id = s.user_id
        WHERE u.role = 'employee'
        GROUP BY u.id, u.username, u.data_column
-       ORDER BY u.username`
+       ORDER BY u.username`,
     );
     return result.rows;
   }
@@ -100,13 +107,13 @@ class Service {
         SUM(earnings) * 0.5 as total_admin_earnings,
         COUNT(*) as total_services,
         COUNT(DISTINCT user_id) as active_employees
-       FROM services`
+       FROM services`,
     );
     return result.rows[0];
   }
 
   static async delete(id, userId = null) {
-    let query = 'DELETE FROM services WHERE id = $1';
+    let query = "DELETE FROM services WHERE id = $1";
     const params = [id];
 
     if (userId) {
@@ -114,10 +121,22 @@ class Service {
       query += ` AND user_id = $${params.length}`;
     }
 
-    query += ' RETURNING *';
+    query += " RETURNING *";
 
     const result = await pool.query(query, params);
     return result.rows[0];
+  }
+
+  static async updateComment(id, comment) {
+    try {
+      const result = await pool.query(
+        "UPDATE services SET comment = $1 WHERE id = $2 RETURNING *",
+        [comment, id],
+      );
+      return result.rows[0];
+    } catch (error) {
+      throw error;
+    }
   }
 }
 

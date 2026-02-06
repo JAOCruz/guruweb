@@ -34,14 +34,15 @@ const servicesController = {
         });
       }
 
-      // Auto-generate time in format "HH:MM AM/PM"
+      // Auto-generate time in Santo Domingo timezone (Dominican Republic)
       const now = new Date();
-      const hours = now.getHours();
-      const minutes = now.getMinutes();
-      const ampm = hours >= 12 ? "PM" : "AM";
-      const displayHours = hours % 12 || 12;
-      const displayMinutes = minutes.toString().padStart(2, "0");
-      const autoTime = `${displayHours}:${displayMinutes} ${ampm}`;
+      const options = {
+        timeZone: "America/Santo_Domingo",
+        hour: "numeric",
+        minute: "numeric",
+        hour12: true,
+      };
+      const autoTime = new Intl.DateTimeFormat("en-US", options).format(now);
 
       // Find employee by username (case insensitive)
       const employee = await User.findByUsername(username.toLowerCase());
@@ -50,7 +51,7 @@ const servicesController = {
         // Try to find by data_column if username not found
         const allEmployees = await User.getAllEmployees();
         const employeeByColumn = allEmployees.find(
-          (emp) => emp.data_column?.toUpperCase() === username.toUpperCase()
+          (emp) => emp.data_column?.toUpperCase() === username.toUpperCase(),
         );
 
         if (!employeeByColumn) {
@@ -63,7 +64,7 @@ const servicesController = {
           client || null,
           autoTime, // Use auto-generated time
           parseFloat(earnings),
-          date || null
+          date || null,
         );
 
         return res.status(201).json(service);
@@ -81,7 +82,7 @@ const servicesController = {
         client || null,
         autoTime, // Use auto-generated time
         parseFloat(earnings),
-        date || null
+        date || null,
       );
 
       res.status(201).json(service);
@@ -141,6 +142,24 @@ const servicesController = {
       res.json({ message: "Service deleted successfully" });
     } catch (error) {
       console.error("Delete service error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  },
+
+  async updateComment(req, res) {
+    try {
+      const { id } = req.params;
+      const { comment } = req.body;
+
+      const updatedService = await Service.updateComment(id, comment);
+
+      if (!updatedService) {
+        return res.status(404).json({ error: "Service not found" });
+      }
+
+      res.json(updatedService);
+    } catch (error) {
+      console.error("Update comment error:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   },

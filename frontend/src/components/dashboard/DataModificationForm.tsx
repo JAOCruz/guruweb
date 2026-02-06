@@ -94,11 +94,9 @@ const DataModificationForm: React.FC<DataModificationFormProps> = ({
   };
 
   return (
-    <div className="perspective-container overflow-hidden rounded-lg border border-blue-900/30 bg-gray-800/80 backdrop-blur-sm">
-      <div className="flex items-center justify-between border-b border-blue-900/30 bg-gray-900/80 px-4 py-3">
-        <h3 className="metallic-3d-text text-lg font-medium">
-          Modificar Datos
-        </h3>
+    <div className="overflow-hidden rounded-lg border border-slate-700 bg-slate-800 shadow-xl">
+      <div className="flex items-center justify-between border-b border-slate-700 bg-slate-900/50 px-4 py-3">
+        <h3 className="text-lg font-bold text-white">Modificar Datos</h3>
         <button
           onClick={() => setIsFormOpen(!isFormOpen)}
           className="rounded-lg border border-blue-900/30 bg-blue-600/20 px-4 py-2 text-sm text-blue-300 hover:bg-blue-600/30"
@@ -127,7 +125,7 @@ const DataModificationForm: React.FC<DataModificationFormProps> = ({
                 id="user"
                 value={selectedUser}
                 onChange={(e) => setSelectedUser(e.target.value)}
-                className="w-full rounded-lg border border-blue-900/30 bg-gray-900/80 p-2.5 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                className="w-full rounded-lg border border-slate-600 bg-slate-700 p-2.5 text-white transition-colors hover:border-slate-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               >
                 {USER_COLUMNS.map((user) => (
                   <option key={user} value={user}>
@@ -170,7 +168,7 @@ const DataModificationForm: React.FC<DataModificationFormProps> = ({
                 id="client"
                 value={client}
                 onChange={(e) => setClient(e.target.value)}
-                className="w-full rounded-lg border border-blue-900/30 bg-gray-900/80 p-2.5 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                className="w-full rounded-lg border border-slate-600 bg-slate-700 p-2.5 text-white transition-colors hover:border-slate-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                 placeholder="Nombre del cliente"
               />
             </div>
@@ -187,7 +185,7 @@ const DataModificationForm: React.FC<DataModificationFormProps> = ({
                 id="earnings"
                 value={earnings}
                 onChange={(e) => setEarnings(e.target.value)}
-                className="w-full rounded-lg border border-blue-900/30 bg-gray-900/80 p-2.5 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                className="w-full rounded-lg border border-slate-600 bg-slate-700 p-2.5 text-white transition-colors hover:border-slate-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                 placeholder="Ej: 500"
                 min="0"
                 step="0.01"

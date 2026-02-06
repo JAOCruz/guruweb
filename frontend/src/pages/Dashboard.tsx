@@ -5,24 +5,34 @@ import AdminDataTable from "../components/dashboard/AdminDataTable";
 import EmployeeDataTable from "../components/dashboard/EmployeeDataTable";
 import DataModificationForm from "../components/dashboard/DataModificationForm";
 import DataCharts from "../components/dashboard/DataCharts";
-import FlipbooksSection from "../components/dashboard/FlipbooksSection"; // ← NUEVO IMPORT
+import FlipbooksSection from "../components/dashboard/FlipbooksSection";
+import StatsCard from "../components/dashboard/StatsCard";
 import { servicesAPI } from "../services/api";
 import { useAuth } from "../context/AuthContext";
+import { Zap } from "lucide-react";
+import { USER_COLUMNS } from "../services/excelService";
 
 const Dashboard: React.FC = () => {
   const { isAdmin, user } = useAuth();
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
+  const getTodayString = () => new Date().toISOString().split("T")[0];
+
+  const [startDate, setStartDate] = useState(getTodayString());
+  const [endDate, setEndDate] = useState(getTodayString());
+
+  // Default value for employee share percentage
+  const employeePercentage = 50;
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [startDate, endDate]); // Re-fetch when dates change
 
   const fetchData = async () => {
     try {
       setLoading(true);
-      const response = await servicesAPI.getServices();
-      console.log("Services data:", response.data);
+      const response = await servicesAPI.getServices(startDate, endDate);
+      // console.log("Services data:", response.data);
       setServices(response.data);
     } catch (error) {
       console.error("Error fetching services:", error);
@@ -31,31 +41,36 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  // Filter services for current employee
   const getEmployeeServices = () => {
     if (isAdmin) return services;
-
+    const dataCol = (user?.dataColumn || "").toUpperCase();
     return services.filter(
-      (service: any) => service.data_column === user?.dataColumn,
+      (s: any) => (s.data_column || "").toUpperCase() === dataCol,
     );
   };
 
   const transformToExcelFormat = () => {
     if (!services.length) return [];
 
+    // Initialize groupedByUser with ALL USER_COLUMNS (UPPERCASE)
     const groupedByUser: Record<string, any[]> = {};
+    USER_COLUMNS.forEach((u) => {
+      groupedByUser[u] = [];
+    });
 
     services.forEach((service: any) => {
-      const user = service.data_column;
-      if (!groupedByUser[user]) {
-        groupedByUser[user] = [];
+      // Handle case-insensitive mapping
+      const dataCol = (service.data_column || "").toUpperCase();
+      const match = USER_COLUMNS.find((u) => u === dataCol);
+      if (match) {
+        groupedByUser[match].push(service);
       }
-      groupedByUser[user].push(service);
     });
 
     const transformed: any[] = [];
     const maxServices = Math.max(
       ...Object.values(groupedByUser).map((arr: any[]) => arr.length),
+      0,
     );
 
     for (let i = 0; i < maxServices; i++) {
@@ -63,24 +78,31 @@ const Dashboard: React.FC = () => {
       const clientRow: any = { DETALLE: "CLIENTE" };
       const timeRow: any = { DETALLE: "HORA" };
       const earningsRow: any = { DETALLE: "GANANCIA" };
+      const commentRow: any = { DETALLE: "NOTA" };
 
-      Object.entries(groupedByUser).forEach(([user, userServices]) => {
+      USER_COLUMNS.forEach((u) => {
+        const userServices = groupedByUser[u] || [];
         const service = userServices[i];
+
         if (service) {
-          serviceRow[user] = service.service_name;
+          serviceRow[u] = service.service_name;
+          serviceRow[`${u}_id`] = service.id;
           serviceRow.id = service.id;
-          clientRow[user] = service.client || "";
-          timeRow[user] = service.time || "";
-          earningsRow[user] = service.earnings;
+
+          clientRow[u] = service.client || "";
+          timeRow[u] = service.time || "";
+          earningsRow[u] = service.earnings;
+          commentRow[u] = service.comment || "";
         } else {
-          serviceRow[user] = "";
-          clientRow[user] = "";
-          timeRow[user] = "";
-          earningsRow[user] = "";
+          serviceRow[u] = "";
+          clientRow[u] = "";
+          timeRow[u] = "";
+          earningsRow[u] = "";
+          commentRow[u] = "";
         }
       });
 
-      transformed.push(serviceRow, clientRow, timeRow, earningsRow);
+      transformed.push(serviceRow, clientRow, timeRow, earningsRow, commentRow);
     }
 
     return transformed;
@@ -105,21 +127,141 @@ const Dashboard: React.FC = () => {
           path="/"
           element={
             <div className="space-y-8">
-              {isAdmin && <DataModificationForm onServiceAdded={fetchData} />}
+              {/* Header / Top Bar for Page */}
+              <div className="mb-10 flex flex-col items-start justify-between gap-6 md:flex-row md:items-center">
+                <div>
+                  <h2 className="font-display mb-2 text-3xl font-bold text-white">
+                    Resumen Operativo
+                  </h2>
+                  <p className="text-sm text-slate-400">
+                    Gestiona y visualiza el rendimiento en tiempo real.
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  {/* Date Filter Integrated into Header style */}
+                  <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-700/50 bg-[#151E32]/50 p-2 backdrop-blur-sm">
+                    <div className="flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-800/50 px-3 py-1.5">
+                      <span className="text-[10px] font-bold tracking-widest text-slate-500 uppercase">
+                        Desde
+                      </span>
+                      <input
+                        type="date"
+                        value={startDate}
+                        onChange={(e) => setStartDate(e.target.value)}
+                        className="cursor-pointer border-none bg-transparent p-0 text-sm text-white focus:outline-none"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-800/50 px-3 py-1.5">
+                      <span className="text-[10px] font-bold tracking-widest text-slate-500 uppercase">
+                        Hasta
+                      </span>
+                      <input
+                        type="date"
+                        value={endDate}
+                        onChange={(e) => setEndDate(e.target.value)}
+                        className="cursor-pointer border-none bg-transparent p-0 text-sm text-white focus:outline-none"
+                      />
+                    </div>
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => {
+                          setStartDate(getTodayString());
+                          setEndDate(getTodayString());
+                        }}
+                        className="rounded-xl border border-blue-500/20 bg-blue-600/20 px-3 py-1.5 text-[10px] font-bold tracking-widest text-blue-400 uppercase transition-all hover:bg-blue-600 hover:text-white"
+                      >
+                        Hoy
+                      </button>
+                      <button
+                        onClick={() => {
+                          setStartDate("");
+                          setEndDate("");
+                        }}
+                        className="rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-1.5 text-[10px] font-bold tracking-widest text-slate-400 uppercase transition-all hover:bg-slate-700 hover:text-white"
+                      >
+                        Limpiar
+                      </button>
+                    </div>
+                  </div>
+                  <button className="flex items-center gap-2 rounded-2xl bg-purple-600 px-5 py-2.5 text-sm font-bold text-white shadow-[0_0_15px_rgba(147,51,234,0.5)] transition-all duration-300 hover:bg-purple-500">
+                    <Zap size={16} />
+                    Insights IA
+                  </button>
+                </div>
+              </div>
+
+              {/* STATS SECTION */}
+              {isAdmin && (
+                <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+                  <StatsCard
+                    label="Total Admin"
+                    value={`$${services.reduce((acc, s: any) => acc + (s.earnings || 0), 0).toLocaleString()}`}
+                    subValue={`${services.length} serv.`}
+                    color="text-emerald-400"
+                    delay={0.1}
+                  />
+                  {/* Dynamic stats for workers could go here, for now using placeholders matching the requested design concept */}
+                  <StatsCard
+                    label="Hengi"
+                    value={`$${services
+                      .filter(
+                        (s: any) =>
+                          (s.data_column || "").toUpperCase() === "HENGI",
+                      )
+                      .reduce((acc, s: any) => acc + (s.earnings || 0), 0)
+                      .toLocaleString()}`}
+                    subValue={`${services.filter((s: any) => (s.data_column || "").toUpperCase() === "HENGI").length} serv.`}
+                    color="text-blue-400"
+                    delay={0.2}
+                  />
+                  <StatsCard
+                    label="Marleni"
+                    value={`$${services
+                      .filter(
+                        (s: any) =>
+                          (s.data_column || "").toUpperCase() === "MARLENI",
+                      )
+                      .reduce((acc, s: any) => acc + (s.earnings || 0), 0)
+                      .toLocaleString()}`}
+                    subValue={`${services.filter((s: any) => (s.data_column || "").toUpperCase() === "MARLENI").length} serv.`}
+                    color="text-purple-400"
+                    delay={0.3}
+                  />
+                  <StatsCard
+                    label="Israel"
+                    value={`$${services
+                      .filter(
+                        (s: any) =>
+                          (s.data_column || "").toUpperCase() === "ISRAEL",
+                      )
+                      .reduce((acc, s: any) => acc + (s.earnings || 0), 0)
+                      .toLocaleString()}`}
+                    subValue={`${services.filter((s: any) => (s.data_column || "").toUpperCase() === "ISRAEL").length} serv.`}
+                    color="text-pink-400"
+                    delay={0.4}
+                  />
+                </div>
+              )}
+
+              {isAdmin && (
+                <div className="mb-6">
+                  <DataModificationForm onServiceAdded={fetchData} />
+                </div>
+              )}
+
               {isAdmin ? (
                 <AdminDataTable
                   data={transformToExcelFormat()}
                   onSort={() => {}}
                   onServiceDeleted={fetchData}
+                  employeePercentage={employeePercentage}
+                  isEmployeeView={false}
                 />
               ) : (
-                <>
-                  {/* Tabla del empleado */}
+                <div className="space-y-8">
                   <EmployeeDataTable services={getEmployeeServices()} />
-
-                  {/* Sección de Flipbooks - NUEVO */}
                   <FlipbooksSection />
-                </>
+                </div>
               )}
             </div>
           }
@@ -127,27 +269,30 @@ const Dashboard: React.FC = () => {
         <Route
           path="/data"
           element={
-            isAdmin ? (
-              <AdminDataTable
-                data={transformToExcelFormat()}
-                onSort={() => {}}
-                onServiceDeleted={fetchData}
-              />
-            ) : (
-              <div className="space-y-8">
-                <EmployeeDataTable services={services} />
-                {/* Flipbooks también en la vista de datos */}
-                <FlipbooksSection />
-              </div>
-            )
+            <div className="space-y-8">
+              {isAdmin ? (
+                <AdminDataTable
+                  data={transformToExcelFormat()}
+                  onSort={() => {}}
+                  onServiceDeleted={fetchData}
+                  employeePercentage={employeePercentage}
+                />
+              ) : (
+                <EmployeeDataTable services={getEmployeeServices()} />
+              )}
+              {!isAdmin && <FlipbooksSection />}
+            </div>
           }
         />
         <Route
           path="/charts"
           element={
-            <DataCharts services={isAdmin ? services : getEmployeeServices()} />
+            // Note: You might need to adjust DataCharts to handle new theme if needed,
+            // but keeping it as is for now as requested
+            <DataCharts services={services} />
           }
         />
+        <Route path="/flipbooks" element={<FlipbooksSection />} />
       </Routes>
     </DashboardLayout>
   );
