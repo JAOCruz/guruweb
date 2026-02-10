@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import LoadingScreen from "../components/LoadingScreen";
 import { Routes, Route } from "react-router-dom";
 import DashboardLayout from "../components/dashboard/DashboardLayout";
 import AdminDataTable from "../components/dashboard/AdminDataTable";
@@ -11,6 +12,7 @@ import { servicesAPI } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import { Zap } from "lucide-react";
 import { USER_COLUMNS } from "../services/excelService";
+import { formatCurrency } from "../utils";
 
 const Dashboard: React.FC = () => {
   const { isAdmin, user } = useAuth();
@@ -109,15 +111,7 @@ const Dashboard: React.FC = () => {
   };
 
   if (loading) {
-    return (
-      <DashboardLayout>
-        <div className="flex h-full items-center justify-center">
-          <div className="text-center">
-            <div className="mb-4 text-2xl text-white">Cargando...</div>
-          </div>
-        </div>
-      </DashboardLayout>
-    );
+    return <LoadingScreen />;
   }
 
   return (
@@ -128,19 +122,19 @@ const Dashboard: React.FC = () => {
           element={
             <div className="space-y-8">
               {/* Header / Top Bar for Page */}
-              <div className="mb-10 flex flex-col items-start justify-between gap-6 md:flex-row md:items-center">
+              <div className="mb-10 flex flex-col items-start justify-between gap-6 xl:flex-row xl:items-center">
                 <div>
-                  <h2 className="font-display mb-2 text-3xl font-bold text-white">
+                  <h2 className="font-display mb-2 text-2xl font-bold text-white md:text-3xl">
                     Resumen Operativo
                   </h2>
                   <p className="text-sm text-slate-400">
                     Gestiona y visualiza el rendimiento en tiempo real.
                   </p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex w-full flex-col gap-3 xl:w-auto">
                   {/* Date Filter Integrated into Header style */}
-                  <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-700/50 bg-[#151E32]/50 p-2 backdrop-blur-sm">
-                    <div className="flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-800/50 px-3 py-1.5">
+                  <div className="flex w-full flex-col gap-1.5 rounded-2xl border border-slate-700/50 bg-[#151E32]/50 p-1.5 backdrop-blur-sm sm:flex-row sm:flex-wrap sm:items-center sm:gap-2 sm:p-2">
+                    <div className="flex min-w-0 items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800/50 px-2 py-1.5 sm:gap-2 sm:px-3">
                       <span className="text-[10px] font-bold tracking-widest text-slate-500 uppercase">
                         Desde
                       </span>
@@ -148,10 +142,10 @@ const Dashboard: React.FC = () => {
                         type="date"
                         value={startDate}
                         onChange={(e) => setStartDate(e.target.value)}
-                        className="cursor-pointer border-none bg-transparent p-0 text-sm text-white focus:outline-none"
+                        className="min-w-0 flex-1 cursor-pointer border-none bg-transparent p-0 text-xs text-white focus:outline-none sm:text-sm"
                       />
                     </div>
-                    <div className="flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-800/50 px-3 py-1.5">
+                    <div className="flex min-w-0 items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800/50 px-2 py-1.5 sm:gap-2 sm:px-3">
                       <span className="text-[10px] font-bold tracking-widest text-slate-500 uppercase">
                         Hasta
                       </span>
@@ -159,7 +153,7 @@ const Dashboard: React.FC = () => {
                         type="date"
                         value={endDate}
                         onChange={(e) => setEndDate(e.target.value)}
-                        className="cursor-pointer border-none bg-transparent p-0 text-sm text-white focus:outline-none"
+                        className="min-w-0 flex-1 cursor-pointer border-none bg-transparent p-0 text-xs text-white focus:outline-none sm:text-sm"
                       />
                     </div>
                     <div className="flex gap-1">
@@ -183,7 +177,7 @@ const Dashboard: React.FC = () => {
                       </button>
                     </div>
                   </div>
-                  <button className="flex items-center gap-2 rounded-2xl bg-purple-600 px-5 py-2.5 text-sm font-bold text-white shadow-[0_0_15px_rgba(147,51,234,0.5)] transition-all duration-300 hover:bg-purple-500">
+                  <button className="flex w-full items-center justify-center gap-2 rounded-2xl bg-purple-600 px-5 py-2.5 text-sm font-bold text-white shadow-[0_0_15px_rgba(147,51,234,0.5)] transition-all duration-300 hover:bg-purple-500 sm:w-auto">
                     <Zap size={16} />
                     Insights IA
                   </button>
@@ -192,53 +186,114 @@ const Dashboard: React.FC = () => {
 
               {/* STATS SECTION */}
               {isAdmin && (
-                <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <div className="mb-8 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
                   <StatsCard
                     label="Total Admin"
-                    value={`$${services.reduce((acc, s: any) => acc + (s.earnings || 0), 0).toLocaleString()}`}
+                    value={formatCurrency(
+                      services.reduce(
+                        (acc, s: any) => acc + (Number(s.earnings) || 0),
+                        0,
+                      ),
+                    )}
                     subValue={`${services.length} serv.`}
                     color="text-emerald-400"
                     delay={0.1}
                   />
-                  {/* Dynamic stats for workers could go here, for now using placeholders matching the requested design concept */}
+
+                  {/* Total Users (Sum of their earnings/shares) - calculating as sum of filtered specific users */}
+                  <StatsCard
+                    label="Total Users"
+                    value={formatCurrency(
+                      services
+                        .filter((s: any) =>
+                          ["HENGI", "MARLENI", "ISRAEL", "THAICAR"].includes(
+                            (s.data_column || "").toUpperCase(),
+                          ),
+                        )
+                        .reduce(
+                          (acc, s: any) => acc + (Number(s.earnings) || 0),
+                          0,
+                        ),
+                    )}
+                    subValue={`${
+                      services.filter((s: any) =>
+                        ["HENGI", "MARLENI", "ISRAEL", "THAICAR"].includes(
+                          (s.data_column || "").toUpperCase(),
+                        ),
+                      ).length
+                    } serv.`}
+                    color="text-yellow-400"
+                    delay={0.15}
+                  />
+
+                  {/* Dynamic stats for workers */}
                   <StatsCard
                     label="Hengi"
-                    value={`$${services
-                      .filter(
-                        (s: any) =>
-                          (s.data_column || "").toUpperCase() === "HENGI",
-                      )
-                      .reduce((acc, s: any) => acc + (s.earnings || 0), 0)
-                      .toLocaleString()}`}
+                    value={formatCurrency(
+                      services
+                        .filter(
+                          (s: any) =>
+                            (s.data_column || "").toUpperCase() === "HENGI",
+                        )
+                        .reduce(
+                          (acc, s: any) => acc + (Number(s.earnings) || 0),
+                          0,
+                        ),
+                    )}
                     subValue={`${services.filter((s: any) => (s.data_column || "").toUpperCase() === "HENGI").length} serv.`}
                     color="text-blue-400"
                     delay={0.2}
                   />
                   <StatsCard
                     label="Marleni"
-                    value={`$${services
-                      .filter(
-                        (s: any) =>
-                          (s.data_column || "").toUpperCase() === "MARLENI",
-                      )
-                      .reduce((acc, s: any) => acc + (s.earnings || 0), 0)
-                      .toLocaleString()}`}
+                    value={formatCurrency(
+                      services
+                        .filter(
+                          (s: any) =>
+                            (s.data_column || "").toUpperCase() === "MARLENI",
+                        )
+                        .reduce(
+                          (acc, s: any) => acc + (Number(s.earnings) || 0),
+                          0,
+                        ),
+                    )}
                     subValue={`${services.filter((s: any) => (s.data_column || "").toUpperCase() === "MARLENI").length} serv.`}
                     color="text-purple-400"
                     delay={0.3}
                   />
                   <StatsCard
                     label="Israel"
-                    value={`$${services
-                      .filter(
-                        (s: any) =>
-                          (s.data_column || "").toUpperCase() === "ISRAEL",
-                      )
-                      .reduce((acc, s: any) => acc + (s.earnings || 0), 0)
-                      .toLocaleString()}`}
+                    value={formatCurrency(
+                      services
+                        .filter(
+                          (s: any) =>
+                            (s.data_column || "").toUpperCase() === "ISRAEL",
+                        )
+                        .reduce(
+                          (acc, s: any) => acc + (Number(s.earnings) || 0),
+                          0,
+                        ),
+                    )}
                     subValue={`${services.filter((s: any) => (s.data_column || "").toUpperCase() === "ISRAEL").length} serv.`}
                     color="text-pink-400"
                     delay={0.4}
+                  />
+                  <StatsCard
+                    label="Thaicar"
+                    value={formatCurrency(
+                      services
+                        .filter(
+                          (s: any) =>
+                            (s.data_column || "").toUpperCase() === "THAICAR",
+                        )
+                        .reduce(
+                          (acc, s: any) => acc + (Number(s.earnings) || 0),
+                          0,
+                        ),
+                    )}
+                    subValue={`${services.filter((s: any) => (s.data_column || "").toUpperCase() === "THAICAR").length} serv.`}
+                    color="text-cyan-400"
+                    delay={0.5}
                   />
                 </div>
               )}

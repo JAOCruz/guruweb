@@ -49,7 +49,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   };
 
   return (
-    <div className="flex min-h-screen overflow-x-hidden bg-[#0B1120] font-sans text-slate-200 selection:bg-blue-500/30">
+    <div className="flex w-full min-h-screen overflow-x-hidden bg-[#0B1120] font-sans text-slate-200 selection:bg-blue-500/30">
       {/* INJECT FONTS & GLOBAL DASHBOARD STYLES */}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
@@ -168,12 +168,12 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
 
       {/* Main Content Area */}
       <div
-        className={`relative z-10 flex min-h-screen flex-1 flex-col transition-all duration-300 ease-in-out ${
+        className={`relative z-10 flex min-h-screen min-w-0 flex-1 flex-col overflow-x-hidden transition-all duration-300 ease-in-out ${
           isMobile ? "ml-0" : sidebarOpen ? "ml-64" : "ml-20"
         }`}
       >
         {/* TOP BAR */}
-        <header className="sticky top-0 z-30 flex h-20 items-center justify-between border-b border-white/5 bg-[#0B1120]/80 px-8 backdrop-blur-xl">
+        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-white/5 bg-[#0B1120]/80 px-4 backdrop-blur-xl md:h-20 md:px-8">
           <div className="flex items-center gap-4">
             <button
               onClick={toggleSidebar}
@@ -181,7 +181,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
             >
               <Menu size={24} />
             </button>
-            <h2 className="font-display text-2xl font-bold text-white">
+            <h2 className="font-display text-lg font-bold text-white md:text-2xl">
               {isAdmin ? "Panel Admin" : "Panel Usuario"}
               {!isAdmin && user?.dataColumn && (
                 <span className="ml-3 hidden rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1 font-sans text-sm font-medium text-blue-500 md:inline-block">
@@ -200,8 +200,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         </header>
 
         {/* Page Content */}
-        <main className="dashboard-body h-full p-8">
-          <div className="mx-auto max-w-7xl">{children}</div>
+        <main className="dashboard-body h-full min-w-0 p-3 md:p-8">
+          <div className="mx-auto min-w-0 max-w-7xl">{children}</div>
         </main>
       </div>
     </div>

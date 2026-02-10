@@ -11,6 +11,7 @@ import {
   X,
   Loader2,
 } from "lucide-react";
+import { formatCurrency } from "../../utils";
 
 // --- TIPOS ---
 interface AdminDataTableProps {
@@ -130,11 +131,14 @@ const AdminDataTable: React.FC<AdminDataTableProps> = ({
   const calculateUserTotals = () => {
     const totals: any = {};
     USER_COLUMNS.forEach((user) => {
-      const total = groupedData[user].reduce((acc, s) => acc + s.earnings, 0);
+      const total = groupedData[user].reduce(
+        (acc, s) => acc + (Number(s.earnings) || 0),
+        0,
+      );
       totals[user] = {
         total,
-        adminShare: Number((total * (1 - employeePercentage / 100)).toFixed(2)),
-        userShare: Number((total * (employeePercentage / 100)).toFixed(2)),
+        adminShare: total * (1 - employeePercentage / 100),
+        userShare: total * (employeePercentage / 100),
       };
     });
     return totals;
@@ -251,7 +255,7 @@ const AdminDataTable: React.FC<AdminDataTableProps> = ({
       <div className="flex flex-col items-center justify-between gap-6 border-b border-white/5 pb-6 md:flex-row">
         {/* Tabs de Usuario */}
         {!isEmployeeView && (
-          <div className="scrollbar-hide flex w-full gap-2 overflow-x-auto pb-2 md:w-auto md:pb-0">
+          <div className="flex w-full flex-wrap gap-2 md:w-auto">
             <button
               onClick={() => setActiveUser("all")}
               className={`rounded-lg px-4 py-1.5 text-xs font-bold tracking-wide whitespace-nowrap uppercase transition-all ${
@@ -295,19 +299,21 @@ const AdminDataTable: React.FC<AdminDataTableProps> = ({
           className="overflow-hidden rounded-2xl border border-slate-700/50 bg-[#151E32] shadow-xl"
         >
           {/* Header de la Tabla */}
-          <div className="flex items-center justify-between border-b border-slate-700/50 bg-[#1A233A] p-5">
-            <h3 className="font-bold tracking-wide text-white uppercase">
+          <div className="flex flex-col gap-2 border-b border-slate-700/50 bg-[#1A233A] p-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:p-5">
+            <h3 className="text-sm font-bold tracking-wide text-white uppercase sm:text-base">
               {user}
             </h3>
-            <div className="flex items-center gap-4 text-xs">
+            <div className="flex gap-3 font-mono text-xs sm:gap-4">
               <span className="font-bold tracking-widest text-slate-400 uppercase">
                 Total:{" "}
-                <span className="text-blue-400">${userTotals[user].total}</span>
+                <span className="text-blue-400">
+                  {formatCurrency(userTotals[user].total)}
+                </span>
               </span>
               <span className="font-bold tracking-widest text-slate-400 uppercase">
                 Admin:{" "}
                 <span className="text-emerald-400">
-                  ${userTotals[user].adminShare}
+                  {formatCurrency(userTotals[user].adminShare)}
                 </span>
               </span>
             </div>
@@ -347,28 +353,25 @@ const AdminDataTable: React.FC<AdminDataTableProps> = ({
                           </div>
                         </td>
                         <td className="p-5 font-mono font-bold text-emerald-400">
-                          ${item.earnings}
+                          {formatCurrency(item.earnings)}
                         </td>
                         <td className="p-5">
-                          <div className="flex flex-col gap-1">
+                          <div className="flex flex-col gap-1 font-mono">
                             <span className="text-[10px] font-bold tracking-widest text-slate-500 uppercase">
                               Admin:{" "}
                               <span className="text-blue-400">
-                                $
-                                {(
+                                {formatCurrency(
                                   item.earnings *
-                                  (1 - employeePercentage / 100)
-                                ).toFixed(2)}
+                                    (1 - employeePercentage / 100),
+                                )}
                               </span>
                             </span>
                             <span className="text-[10px] font-bold tracking-widest text-slate-500 uppercase">
                               User:{" "}
                               <span className="text-yellow-400">
-                                $
-                                {(
-                                  item.earnings *
-                                  (employeePercentage / 100)
-                                ).toFixed(2)}
+                                {formatCurrency(
+                                  item.earnings * (employeePercentage / 100),
+                                )}
                               </span>
                             </span>
                           </div>
@@ -450,39 +453,52 @@ const AdminDataTable: React.FC<AdminDataTableProps> = ({
 
           {/* VISTA MÓVIL (Tarjetas) */}
           <div className="divide-y divide-slate-800 md:hidden">
-            {groupedData[user].map((item, idx) => (
-              <div key={`${user}-m-${idx}`} className="bg-slate-900 p-4">
-                <div className="mb-2 flex items-start justify-between">
-                  <div>
-                    <p className="text-base font-bold text-white">
-                      {item.service}
-                    </p>
-                    <p className="text-sm text-slate-500">
-                      {item.client || "Cliente General"}
-                    </p>
+            {groupedData[user].length > 0 ? (
+              groupedData[user].map((item, idx) => (
+                <div key={`${user}-m-${idx}`} className="bg-slate-900 p-3">
+                  {/* Row 1: Service name + earnings */}
+                  <div className="mb-1 flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm leading-tight font-bold break-words text-white">
+                        {item.service}
+                      </p>
+                      <p className="mt-0.5 text-xs text-slate-500">
+                        {item.client || "Cliente General"}
+                      </p>
+                    </div>
+                    <span className="flex-shrink-0 text-base font-bold text-emerald-400">
+                      {formatCurrency(item.earnings)}
+                    </span>
                   </div>
-                  <span className="text-lg font-bold text-emerald-400">
-                    ${item.earnings}
-                  </span>
-                </div>
-                <div className="mt-3 flex items-center justify-between">
-                  <div className="flex items-center gap-2 font-mono text-xs text-slate-500">
-                    <span>{item.time}</span>
-                    {item.comment && (
-                      <span className="max-w-[150px] truncate rounded bg-slate-800 px-2 py-0.5 text-slate-300">
-                        {item.comment}
-                      </span>
-                    )}
+                  {/* Row 2: Time, comment, delete */}
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5 font-mono text-xs text-slate-500">
+                      <span className="whitespace-nowrap">{item.time || "--:--"}</span>
+                      {item.comment && (
+                        <span className="truncate rounded bg-slate-800 px-1.5 py-0.5 text-slate-300">
+                          {item.comment}
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => handleDelete(item.id)}
+                      disabled={deletingId === item.id}
+                      className="flex-shrink-0 rounded p-1 text-slate-600 hover:text-red-400"
+                    >
+                      {deletingId === item.id ? (
+                        <Loader2 className="animate-spin" size={16} />
+                      ) : (
+                        <Trash2 size={16} />
+                      )}
+                    </button>
                   </div>
-                  <button
-                    onClick={() => handleDelete(item.id)}
-                    className="text-slate-600 hover:text-red-400"
-                  >
-                    <Trash2 size={18} />
-                  </button>
                 </div>
+              ))
+            ) : (
+              <div className="p-6 text-center text-sm text-slate-500 italic">
+                Sin servicios registrados hoy
               </div>
-            ))}
+            )}
           </div>
         </div>
       ))}
